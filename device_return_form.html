@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Return Form</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9fafb; margin: 20px; }
+    h1 { text-align: center; }
+    form { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
+    .signature-container { border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; background: #fdfdfd; }
+    canvas { width: 100%; height: 150px; }
+    button { margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background: black; color: white; cursor: pointer; }
+    button:hover { opacity: 0.9; }
+    .images-preview img { max-height: 100px; margin: 5px; border: 1px solid #ccc; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Device Return Form</h1>
+  <form id="returnForm">
+    <label>Store ID:<input type="text" id="storeId"></label>
+    <label>Store Name:<input type="text" id="storeName"></label>
+    <label>Team Member Name:
+      <select id="teamMember">
+        <!-- Add <option>Team Member Name</option> here -->
+      </select>
+    </label>
+    <label>Devices Returned:
+      <select id="devicesReturned" multiple>
+        <!-- Add <option>Device Name</option> here -->
+      </select>
+    </label>
+    <label>Are any devices Damaged?
+      <select id="damaged">
+        <option value="">Select...</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </label>
+    <label>Image of Devices with their accessories:<input type="file" id="accessoryImage" accept="image/*"></label>
+    <div id="accessoryPreview" class="images-preview"></div>
+    <label>Upload images of damage:<input type="file" id="damageImages" accept="image/*" multiple></label>
+    <div id="damagePreview" class="images-preview"></div>
+    <label>Date and Time of return:<input type="datetime-local" id="returnDateTime"></label>
+    <label>Store Team Member (who devices are being returned to):<input type="text" id="storeMember"></label>
+    <label>Store Team Member Position:<input type="text" id="storePosition"></label>
+    <label>Store Team Member Phone Number:<input type="tel" id="storePhone"></label>
+    <label>Signature:</label>
+    <div class="signature-container">
+      <canvas id="signature-pad"></canvas>
+    </div>
+    <button type="button" onclick="clearSignature()">Clear Signature</button>
+    <button type="button" onclick="generatePDF()">Export PDF</button>
+  </form>
+
+  <script>
+    const { jsPDF } = window.jspdf;
+    const canvas = document.getElementById('signature-pad');
+    const signaturePad = new SignaturePad(canvas);
+
+    function clearSignature() {
+      signaturePad.clear();
+    }
+
+    function previewImages(input, previewContainer) {
+      const container = document.getElementById(previewContainer);
+      container.innerHTML = '';
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          container.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
+    document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
+
+    async function generatePDF() {
+      const form = document.getElementById('returnForm');
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      const canvasPreview = await html2canvas(form, { scale: 2 });
+      const imgData = canvasPreview.toDataURL('image/png');
+      const imgWidth = 595;
+      const imgHeight = (canvasPreview.height * imgWidth) / canvasPreview.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 842;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 842;
+      }
+      pdf.save('device-return.pdf');
+    }
+  </script>
+</body>
+</html>
