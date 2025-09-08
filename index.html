@@ -48,35 +48,53 @@
         <option>Riley Aitkin</option>
       </select>
     </label>
-    <label>Devices Returned:</label>
-<div id="devicesReturned">
-  <!-- Add/remove checkboxes here -->
-  <label><input type="checkbox" value="iPhone 13"> iPhone 13</label><br>
-  <label><input type="checkbox" value="iPhone 15"> iPhone 15</label><br>
-  <label><input type="checkbox" value="iPhone 16e"> iPhone 16e</label><br>
-  <label><input type="checkbox" value="iPhone 16"> iPhone 16</label><br>
-  <label><input type="checkbox" value="iPhone 16 Plus"> iPhone 16 Plus</label><br>
-  <label><input type="checkbox" value="iPhone 16 Pro"> iPhone 16 Pro</label><br>
-  <label><input type="checkbox" value="iPhone 16 Pro Max"> iPhone 16 Pro Max</label><br>
-  <label><input type="checkbox" value="Apple Watch SE"> Apple Watch SE</label><br>
-  <label><input type="checkbox" value="Apple Watch Series 10"> Apple Watch Series 10</label><br>
-  <label><input type="checkbox" value="Apple Watch Ultra 2"> Apple Watch Ultra 2</label><br>
-  <label><input type="checkbox" value="iPad A16"> iPad A16</label><br>
-  <label><input type="checkbox" value="iPad Air 11"> iPad Air 11"</label><br>
-  <label><input type="checkbox" value="iPad Air 13"> iPad Air 13"</label><br>
-  <label><input type="checkbox" value="iPad Pro 11"> iPad Pro 11"</label><br>
-  <label><input type="checkbox" value="MacBook Air 13 M2"> MacBook Air 13" M2</label><br>
-  <label><input type="checkbox" value="MacBook Air 13 M4"> MacBook Air 13" M4</label><br>
-  <label><input type="checkbox" value="MacBook Air 15 M4"> MacBook Air 15" M4</label><br>
-  <label><input type="checkbox" value="MacBook Pro 14 M4"> MacBook Pro 14" M4</label><br>
-  <label><input type="checkbox" value="MacBook Pro 14 M4 Pro"> MacBook Pro 14" M4 Pro</label><br>
-  <label><input type="checkbox" value="iMac 24 M4"> iMac 24" M4</label><br>
-  <label><input type="checkbox" value="Mac mini M4"> Mac mini M4</label><br>
-  <label><input type="checkbox" value="Studio Display"> Studio Display</label><br>
-  <label><input type="checkbox" value="HomePod mini"> HomePod mini</label><br>
-  <label><input type="checkbox" value="HomePod"> HomePod</label><br>
-  <label><input type="checkbox" value="AirPods Max"> AirPods Max</label><br>
+    
+    
+    <style>
+  /* Add this to your existing <style> block */
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 5px 15px; /* row gap, column gap */
+  }
+  .checkbox-grid label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+  }
+</style>
+
+<label>Devices Returned:</label>
+<div id="devicesReturned" class="checkbox-grid">
+  <label><input type="checkbox" value="iPhone 13"> iPhone 13</label>
+  <label><input type="checkbox" value="iPhone 15"> iPhone 15</label>
+  <label><input type="checkbox" value="iPhone 16e"> iPhone 16e</label>
+  <label><input type="checkbox" value="iPhone 16"> iPhone 16</label>
+  <label><input type="checkbox" value="iPhone 16 Plus"> iPhone 16 Plus</label>
+  <label><input type="checkbox" value="iPhone 16 Pro"> iPhone 16 Pro</label>
+  <label><input type="checkbox" value="iPhone 16 Pro Max"> iPhone 16 Pro Max</label>
+  <label><input type="checkbox" value="Apple Watch SE"> Apple Watch SE</label>
+  <label><input type="checkbox" value="Apple Watch Series 10"> Apple Watch Series 10</label>
+  <label><input type="checkbox" value="Apple Watch Ultra 2"> Apple Watch Ultra 2</label>
+  <label><input type="checkbox" value="iPad A16"> iPad A16</label>
+  <label><input type="checkbox" value="iPad Air 11"> iPad Air 11"</label>
+  <label><input type="checkbox" value="iPad Air 13"> iPad Air 13"</label>
+  <label><input type="checkbox" value="iPad Pro 11"> iPad Pro 11"</label>
+  <label><input type="checkbox" value="MacBook Air 13 M2"> MacBook Air 13" M2</label>
+  <label><input type="checkbox" value="MacBook Air 13 M4"> MacBook Air 13" M4</label>
+  <label><input type="checkbox" value="MacBook Air 15 M4"> MacBook Air 15" M4</label>
+  <label><input type="checkbox" value="MacBook Pro 14 M4"> MacBook Pro 14" M4</label>
+  <label><input type="checkbox" value="MacBook Pro 14 M4 Pro"> MacBook Pro 14" M4 Pro</label>
+  <label><input type="checkbox" value="iMac 24 M4"> iMac 24" M4</label>
+  <label><input type="checkbox" value="Mac mini M4"> Mac mini M4</label>
+  <label><input type="checkbox" value="Studio Display"> Studio Display</label>
+  <label><input type="checkbox" value="HomePod mini"> HomePod mini</label>
+  <label><input type="checkbox" value="HomePod"> HomePod</label>
+  <label><input type="checkbox" value="AirPods Max"> AirPods Max</label>
 </div>
+
+    
       </select>
     </label>
     <label>Are any devices Damaged?
@@ -128,25 +146,54 @@
     document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
     document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
 
-    async function generatePDF() {
-      const form = document.getElementById('returnForm');
-      const pdf = new jsPDF('p', 'pt', 'a4');
-      const canvasPreview = await html2canvas(form, { scale: 2 });
-      const imgData = canvasPreview.toDataURL('image/png');
-      const imgWidth = 595;
-      const imgHeight = (canvasPreview.height * imgWidth) / canvasPreview.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= 842;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= 842;
-      }
-      pdf.save('device-return.pdf');
-    }
+    function generatePDF() {
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  let y = 40;
+  const lineHeight = 20;
+
+  pdf.setFontSize(16);
+  pdf.text("Device Return Form", 40, y);
+  y += lineHeight * 2;
+
+  pdf.setFontSize(12);
+  pdf.text(`Store ID: ${document.getElementById('storeId').value}`, 40, y);
+  y += lineHeight;
+  pdf.text(`Store Name: ${document.getElementById('storeName').value}`, 40, y);
+  y += lineHeight;
+  pdf.text(`Team Member: ${document.getElementById('teamMember').value}`, 40, y);
+  y += lineHeight;
+
+  // Devices returned
+  const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked'))
+                              .map(cb => cb.value);
+  pdf.text(`Devices Returned:`, 40, y);
+  y += lineHeight;
+  devicesChecked.forEach(device => {
+    pdf.text(`- ${device}`, 60, y);
+    y += lineHeight;
+  });
+
+  pdf.text(`Any Devices Damaged: ${document.getElementById('damaged').value}`, 40, y);
+  y += lineHeight;
+
+  pdf.text(`Return Date & Time: ${document.getElementById('returnDateTime').value}`, 40, y);
+  y += lineHeight;
+  pdf.text(`Returned To: ${document.getElementById('storeMember').value}`, 40, y);
+  y += lineHeight;
+  pdf.text(`Position: ${document.getElementById('storePosition').value}`, 40, y);
+  y += lineHeight;
+  pdf.text(`Phone: ${document.getElementById('storePhone').value}`, 40, y);
+  y += lineHeight;
+
+  // Add signature
+  if (!signaturePad.isEmpty()) {
+    const sigData = signaturePad.toDataURL();
+    pdf.addImage(sigData, 'PNG', 40, y, 150, 50);
+  }
+
+  const storeId = document.getElementById('storeId').value || 'device-return';
+pdf.save(`${storeId}.pdf`);
+}
   </script>
 </body>
 </html>
