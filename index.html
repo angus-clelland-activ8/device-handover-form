@@ -95,6 +95,12 @@ if(userPass !== password){
   cursor: pointer;
   line-height: 1.2;
 }
+
+    .example-text {
+  font-size: 0.85em;   /* smaller text */
+  color: #555;         /* optional: slightly gray */
+  margin-left: 5px;    /* small space from input */
+}
     
   </style>
 </head>
@@ -116,7 +122,11 @@ if(userPass !== password){
     <option>Spark</option>
   </select>
 </label>
-<label>Store Location: <input type="text" id="storeLocation" placeholder="Enter store location"> (e.g. Newmarket, Riccarton etc.)</label>
+<label>
+  Store Location: 
+  <input type="text" id="storeLocation" placeholder="Enter store location">
+  <span class="example-text">(e.g. Newmarket, Riccarton etc.)</span>
+</label>
 
     <label>Team Member Name:
       <select id="teamMember">
