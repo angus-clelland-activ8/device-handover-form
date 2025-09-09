@@ -101,34 +101,31 @@ if(userPass !== password){
 </style>
 
 <label>Devices Returned:</label>
-<div id="devicesReturned" class="checkbox-list">
-  <label><input type="checkbox" value="iPhone 13"> iPhone 13</label>
-  <label><input type="checkbox" value="iPhone 15"> iPhone 15</label>
-  <label><input type="checkbox" value="iPhone 16e"> iPhone 16e</label>
-  <label><input type="checkbox" value="iPhone 16"> iPhone 16</label>
-  <label><input type="checkbox" value="iPhone 16 Plus"> iPhone 16 Plus</label>
-  <label><input type="checkbox" value="iPhone 16 Pro"> iPhone 16 Pro</label>
-  <label><input type="checkbox" value="iPhone 16 Pro Max"> iPhone 16 Pro Max</label>
-  <label><input type="checkbox" value="Apple Watch SE"> Apple Watch SE</label>
-  <label><input type="checkbox" value="Apple Watch Series 10"> Apple Watch Series 10</label>
-  <label><input type="checkbox" value="Apple Watch Ultra 2"> Apple Watch Ultra 2</label>
-  <label><input type="checkbox" value="iPad A16"> iPad A16</label>
-  <label><input type="checkbox" value="iPad Air 11"> iPad Air 11"</label>
-  <label><input type="checkbox" value="iPad Air 13"> iPad Air 13"</label>
-  <label><input type="checkbox" value="iPad Pro 11"> iPad Pro 11"</label>
-  <label><input type="checkbox" value="iPad Pro 13"> iPad Pro 11"</label>
-  <label><input type="checkbox" value="MacBook Air 13 M2"> MacBook Air 13" M2</label>
-  <label><input type="checkbox" value="MacBook Air 13 M4"> MacBook Air 13" M4</label>
-  <label><input type="checkbox" value="MacBook Air 15 M4"> MacBook Air 15" M4</label>
-  <label><input type="checkbox" value="MacBook Pro 14 M4"> MacBook Pro 14" M4</label>
-  <label><input type="checkbox" value="MacBook Pro 14 M4 Pro"> MacBook Pro 14" M4 Pro</label>
-  <label><input type="checkbox" value="iMac 24 M4"> iMac 24" M4</label>
-  <label><input type="checkbox" value="Mac mini M4"> Mac mini M4</label>
-  <label><input type="checkbox" value="Studio Display"> Studio Display</label>
-  <label><input type="checkbox" value="HomePod mini"> HomePod mini</label>
-  <label><input type="checkbox" value="HomePod"> HomePod</label>
-  <label><input type="checkbox" value="AirPods Max"> AirPods Max</label>
-</div>
+<div id="devicesReturned"></div>
+
+<script>
+  fetch("devices.txt")
+    .then(response => response.text())
+    .then(text => {
+      const deviceList = text.split("\n").map(item => item.trim()).filter(Boolean);
+      const container = document.getElementById("devicesReturned");
+
+      deviceList.forEach(device => {
+        const label = document.createElement("label");
+        label.style.display = "inline-block";
+        label.style.marginRight = "15px";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = device;
+
+        label.appendChild(checkbox);
+        label.append(" " + device);
+        container.appendChild(label);
+      });
+    })
+    .catch(error => console.error("Error loading devices.txt:", error));
+</script>
 
 
     
