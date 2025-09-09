@@ -277,12 +277,12 @@ fetch("devices.txt")
   pdf.setFontSize(12);
   pdf.text(`Store ID: ${document.getElementById('storeId').value}`, 40, y);
   y += lineHeight;
-  pdf.text(`Store Name: ${document.getElementById('storeName').value}`, 40, y);
+  pdf.text(`Retailer: ${document.getElementById('storeName').value}`, 40, y);
   y += lineHeight;
   pdf.text(`Store Location: ${document.getElementById('storeLocation').value}`, 40, y);
   y += lineHeight;
 
-  // Devices returned
+  // ✅ Devices returned
   const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked'))
                               .map(cb => cb.value);
   pdf.text(`Devices Returned:`, 40, y);
@@ -292,11 +292,8 @@ fetch("devices.txt")
     y += lineHeight;
   });
 
-      const otherDevices = document.getElementById('otherDevices').value;
-if (otherDevices) {
-  pdf.text(`Other Devices: ${otherDevices}`, 40, y);
+  pdf.text(`Other Devices: ${document.getElementById('otherDevices').value}`, 40, y);
   y += lineHeight;
-}
 
   pdf.text(`Any Devices Damaged: ${document.getElementById('damaged').value}`, 40, y);
   y += lineHeight;
@@ -310,31 +307,38 @@ if (otherDevices) {
   pdf.text(`Phone: ${document.getElementById('storePhone').value}`, 40, y);
   y += lineHeight;
 
-  // Add accessory images
-const accessoryFiles = document.getElementById('accessoryImage').files;
-for(let i = 0; i < accessoryFiles.length; i++){
-  const accessory = await fileToDataURL(accessoryFile);
-pdf.addImage(accessory.data, 'JPEG', 40, y, accessory.width * 0.25, accessory.height * 0.25);
-y += accessory.height * 0.25 + 10;
-}
+  // ✅ Accessory images (now supports multiple)
+  const accessoryFiles = document.getElementById('accessoryImage').files;
+  for (let i = 0; i < accessoryFiles.length; i++) {
+    const imgObj = await fileToDataURL(accessoryFiles[i]);
+    const scale = Math.min(500 / imgObj.width, 300 / imgObj.height, 1); // fit box
+    const w = imgObj.width * scale;
+    const h = imgObj.height * scale;
 
-  // Add damage images
+    pdf.addImage(imgObj.data, 'JPEG', 40, y, w, h);
+    y += h + 10;
+  }
+
+  // ✅ Damage images
   const damageFiles = document.getElementById('damageImages').files;
-  for (let i=0; i<damageFiles.length; i++){
-  const imgObj = await fileToDataURL(damageFiles[i]);
-  pdf.addImage(imgObj.data, 'JPEG', 40, y, imgObj.width * 0.25, imgObj.height * 0.25);
-  y += imgObj.height * 0.25 + 10;
-}
+  for (let i = 0; i < damageFiles.length; i++) {
+    const imgObj = await fileToDataURL(damageFiles[i]);
+    const scale = Math.min(500 / imgObj.width, 300 / imgObj.height, 1);
+    const w = imgObj.width * scale;
+    const h = imgObj.height * scale;
 
-  // Add signature
-  if(!signaturePad.isEmpty()){
+    pdf.addImage(imgObj.data, 'JPEG', 40, y, w, h);
+    y += h + 10;
+  }
+
+  // ✅ Signature
+  if (!signaturePad.isEmpty()) {
     const sigData = signaturePad.toDataURL();
     pdf.addImage(sigData, 'PNG', 40, y, 150, 50);
   }
 
   const storeId = document.getElementById('storeId').value || 'device-return';
   pdf.save(`${storeId}-Device-Handover.pdf`);
-
 }
 
     alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".\n\nYou can dismiss this message and attach the PDF manually.`);
