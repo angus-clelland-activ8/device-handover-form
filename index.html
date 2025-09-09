@@ -42,18 +42,35 @@ if(userPass !== password){
   display: none;
 }
 
-    .device-list {
+    /* --- Device checklist layout (paste AFTER existing styles) --- */
+.device-list {
   margin-top: 10px;
 }
 
+/* Each item is a row with checkbox + label */
 .device-item {
   display: flex;
   align-items: center;
+  gap: 8px;         /* space between checkbox and text */
   margin-bottom: 6px;
 }
 
+/* Make sure checkboxes don't stretch because of your global input rule */
 .device-item input[type="checkbox"] {
-  margin-right: 8px;
+  width: auto !important;    /* important only to override broad global rules */
+  height: auto !important;
+  margin: 0;                 /* remove unexpected default margins */
+  padding: 0;
+  box-sizing: content-box;
+  vertical-align: middle;
+}
+
+/* Label is normal inline text and clickable */
+.device-item label {
+  display: inline-block;
+  cursor: pointer;
+  margin: 0;
+  line-height: 1.2;
 }
   </style>
 </head>
