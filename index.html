@@ -26,10 +26,25 @@ if(userPass !== password){
     button { margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background: black; color: white; cursor: pointer; }
     button:hover { opacity: 0.9; }
     .images-preview img { max-height: 100px; margin: 5px; border: 1px solid #ccc; border-radius: 6px; }
+
+    .header-image {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.header-image img {
+  max-width: 200px;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
   </style>
 </head>
 <body>
   <h1>Device Return Form</h1>
+  <div class="header-image">
+  <img src="devicehandoverimage.001.png" alt="Header Image">
+</div>
   <form id="returnForm">
     <label>Store ID:<input type="number" id="storeId" inputmode="numeric" pattern="[0-9]*" placeholder="Enter Store ID"></label>
     <label>Store Name:<input type="text" id="storeName"></label>
