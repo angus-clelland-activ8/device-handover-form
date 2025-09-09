@@ -106,7 +106,7 @@
     <label for="otherDevices">
       Other Devices (if not in list):
       <input type="text" id="otherDevices" placeholder="Enter other devices">
-      <span class="example-text">(e.g. iPhone 16 Pro Max Black, Apple Watch SE 44mm)</span>
+      <span class="example-text">(e.g. iPhone 16 Pro Max Black, Apple Watch SE 44mm Midnight)</span>
     </label>
 
     <label>Are any devices Damaged?
@@ -324,7 +324,7 @@
       pdf.text(`Phone: ${document.getElementById('storePhone').value}`, 40, y); y += lineHeight;
 
       // accessory images - update y with returned value
-      y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Accessory Images", 40, y);
+      y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", 40, y);
 
       // damage images - update y with returned value
       y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", 40, y);
