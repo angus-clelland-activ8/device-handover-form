@@ -177,6 +177,8 @@ if(userPass !== password){
   y += lineHeight;
   pdf.text(`Store Name: ${document.getElementById('storeName').value}`, 40, y);
   y += lineHeight;
+  pdf.text(`Store Location: ${document.getElementById('storeLocation').value}`, 40, y);
+  y += lineHeight;
 
   // Devices returned
   const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked'))
