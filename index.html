@@ -135,27 +135,32 @@ if(userPass !== password){
 <div id="devicesReturned"></div>
 
 <script>
-  fetch("devices.txt")
-    .then(response => response.text())
-    .then(text => {
-      const deviceList = text.split("\n").map(item => item.trim()).filter(Boolean);
-      const container = document.getElementById("devicesReturned");
+fetch("devices.txt")
+  .then(response => response.text())
+  .then(text => {
+    const deviceList = text.split("\n").map(item => item.trim()).filter(Boolean);
+    const container = document.getElementById("devicesReturned");
+    container.innerHTML = ''; // clear old content
 
-      deviceList.forEach(device => {
-        const label = document.createElement("label");
-        label.style.display = "inline-block";
-        label.style.marginRight = "15px";
+    deviceList.forEach((device, idx) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "device-item";
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = device;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = device;
+      checkbox.id = "device-" + idx;
 
-        label.appendChild(checkbox);
-        label.append(" " + device);
-        container.appendChild(label);
-      });
-    })
-    .catch(error => console.error("Error loading devices.txt:", error));
+      const label = document.createElement("label");
+      label.setAttribute("for", checkbox.id);
+      label.textContent = device;
+
+      wrapper.appendChild(checkbox);
+      wrapper.appendChild(label);
+      container.appendChild(wrapper);
+    });
+  })
+  .catch(error => console.error("Error loading devices.txt:", error));
 </script>
 
 
