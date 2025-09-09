@@ -313,18 +313,18 @@ if (otherDevices) {
   // Add accessory images
 const accessoryFiles = document.getElementById('accessoryImage').files;
 for(let i = 0; i < accessoryFiles.length; i++){
-  const data = await fileToDataURL(accessoryFiles[i]);
-  pdf.addImage(data, 'PNG', 40, y, 150, 100);
-  y += 110; // space between images
+  const accessory = await fileToDataURL(accessoryFile);
+pdf.addImage(accessory.data, 'JPEG', 40, y, accessory.width * 0.25, accessory.height * 0.25);
+y += accessory.height * 0.25 + 10;
 }
 
   // Add damage images
   const damageFiles = document.getElementById('damageImages').files;
-  for(let i=0; i<damageFiles.length; i++){
-    const data = await fileToDataURL(damageFiles[i]);
-    pdf.addImage(data, 'PNG', 40, y, 150, 100);
-    y += 110;
-  }
+  for (let i=0; i<damageFiles.length; i++){
+  const imgObj = await fileToDataURL(damageFiles[i]);
+  pdf.addImage(imgObj.data, 'JPEG', 40, y, imgObj.width * 0.25, imgObj.height * 0.25);
+  y += imgObj.height * 0.25 + 10;
+}
 
   // Add signature
   if(!signaturePad.isEmpty()){
@@ -339,22 +339,30 @@ for(let i = 0; i < accessoryFiles.length; i++){
 
     alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".\n\nYou can dismiss this message and attach the PDF manually.`);
 
-// Helper function to convert File to Data URL
+// Helper function to resize + compress images before PDF export
 function fileToDataURL(file){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
       img.onload = () => {
-        // Create a canvas with the same dimensions as the image
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
         const ctx = canvas.getContext('2d');
-        // Draw the image onto the canvas (correct orientation)
-        ctx.drawImage(img, 0, 0);
-        // Convert canvas back to Data URL for jsPDF
-        resolve(canvas.toDataURL('image/png'));
+
+        // Max width for resizing (adjust if needed)
+        const maxWidth = 800;
+        const scale = Math.min(maxWidth / img.width, 1); // shrink only
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Return object with image + dimensions
+        resolve({
+          data: canvas.toDataURL('image/jpeg', 0.7), // compressed
+          width: canvas.width,
+          height: canvas.height
+        });
       };
       img.src = e.target.result;
     };
