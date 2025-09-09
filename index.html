@@ -72,6 +72,30 @@ if(userPass !== password){
   margin: 0;
   line-height: 1.2;
 }
+
+    /* Devices Returned vertical checklist */
+.device-list {
+  margin-top: 10px;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;  /* space between rows */
+}
+
+.device-item input[type="checkbox"] {
+  width: auto;          /* override form-wide 100% width */
+  margin: 0 8px 0 0;    /* space to right of checkbox */
+  vertical-align: middle;
+}
+
+.device-item label {
+  margin: 0;
+  cursor: pointer;
+  line-height: 1.2;
+}
+    
   </style>
 </head>
 <body>
