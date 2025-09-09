@@ -12,6 +12,7 @@ iPad A16
 iPad Air 11"
 iPad Air 13"
 iPad Pro 11"
+iPad Pro 13"
 MacBook Air 13" M2
 MacBook Air 13" M4
 MacBook Air 15" M4
