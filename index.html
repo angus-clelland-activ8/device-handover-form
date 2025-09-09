@@ -208,7 +208,11 @@ fetch("devices.txt")
   .catch(error => console.error("Error loading devices.txt:", error));
 </script>
 
-
+<label for="otherDevices">
+  Other Devices (if not in list):
+  <input type="text" id="otherDevices" placeholder="Enter other devices">
+  <span class="example-text">(e.g. iPhone 16 Pro Max Black, Apple Watch SE 44mm, or: if there are multiple of one device, add it again here)</span>
+</label>
     
       </select>
     </label>
@@ -287,6 +291,12 @@ fetch("devices.txt")
     pdf.text(`- ${device}`, 60, y);
     y += lineHeight;
   });
+
+      const otherDevices = document.getElementById('otherDevices').value;
+if (otherDevices) {
+  pdf.text(`Other Devices: ${otherDevices}`, 40, y);
+  y += lineHeight;
+}
 
   pdf.text(`Any Devices Damaged: ${document.getElementById('damaged').value}`, 40, y);
   y += lineHeight;
