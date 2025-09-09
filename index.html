@@ -300,13 +300,13 @@ fetch("devices.txt")
   pdf.text(`Phone: ${document.getElementById('storePhone').value}`, 40, y);
   y += lineHeight;
 
-  // Add accessory image
-  const accessoryFile = document.getElementById('accessoryImage').files[0];
-  if(accessoryFile){
-    const accessoryData = await fileToDataURL(accessoryFile);
-    pdf.addImage(accessoryData, 'PNG', 40, y, 150, 100);
-    y += 110;
-  }
+  // Add accessory images
+const accessoryFiles = document.getElementById('accessoryImage').files;
+for(let i = 0; i < accessoryFiles.length; i++){
+  const data = await fileToDataURL(accessoryFiles[i]);
+  pdf.addImage(data, 'PNG', 40, y, 150, 100);
+  y += 110; // space between images
+}
 
   // Add damage images
   const damageFiles = document.getElementById('damageImages').files;
