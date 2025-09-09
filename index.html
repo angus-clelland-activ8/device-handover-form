@@ -163,7 +163,7 @@ if(userPass !== password){
     document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
     document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
 
-    function generatePDF() {
+    async function generatePDF() {
   const pdf = new jsPDF('p', 'pt', 'a4');
   let y = 40;
   const lineHeight = 20;
@@ -176,8 +176,6 @@ if(userPass !== password){
   pdf.text(`Store ID: ${document.getElementById('storeId').value}`, 40, y);
   y += lineHeight;
   pdf.text(`Store Name: ${document.getElementById('storeName').value}`, 40, y);
-  y += lineHeight;
-  pdf.text(`Team Member: ${document.getElementById('teamMember').value}`, 40, y);
   y += lineHeight;
 
   // Devices returned
@@ -202,14 +200,40 @@ if(userPass !== password){
   pdf.text(`Phone: ${document.getElementById('storePhone').value}`, 40, y);
   y += lineHeight;
 
+  // Add accessory image
+  const accessoryFile = document.getElementById('accessoryImage').files[0];
+  if(accessoryFile){
+    const accessoryData = await fileToDataURL(accessoryFile);
+    pdf.addImage(accessoryData, 'PNG', 40, y, 150, 100);
+    y += 110;
+  }
+
+  // Add damage images
+  const damageFiles = document.getElementById('damageImages').files;
+  for(let i=0; i<damageFiles.length; i++){
+    const data = await fileToDataURL(damageFiles[i]);
+    pdf.addImage(data, 'PNG', 40, y, 150, 100);
+    y += 110;
+  }
+
   // Add signature
-  if (!signaturePad.isEmpty()) {
+  if(!signaturePad.isEmpty()){
     const sigData = signaturePad.toDataURL();
     pdf.addImage(sigData, 'PNG', 40, y, 150, 50);
   }
 
   const storeId = document.getElementById('storeId').value || 'device-return';
-pdf.save(`${storeId}.pdf`);
+  pdf.save(`${storeId}.pdf`);
+}
+
+// Helper function to convert File to Data URL
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = e => reject(e);
+    reader.readAsDataURL(file);
+  });
 }
   </script>
 </body>
