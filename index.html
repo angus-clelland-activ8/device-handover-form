@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <script>
-const password = "Activ8NPI";
+const password = "Activ8";
 let userPass = prompt("Enter password to access the Device Return Form:");
 if(userPass !== password){
   alert("Incorrect password. Access denied.");
@@ -97,6 +97,7 @@ if(userPass !== password){
   <label><input type="checkbox" value="iPad Air 11"> iPad Air 11"</label>
   <label><input type="checkbox" value="iPad Air 13"> iPad Air 13"</label>
   <label><input type="checkbox" value="iPad Pro 11"> iPad Pro 11"</label>
+  <label><input type="checkbox" value="iPad Pro 13"> iPad Pro 11"</label>
   <label><input type="checkbox" value="MacBook Air 13 M2"> MacBook Air 13" M2</label>
   <label><input type="checkbox" value="MacBook Air 13 M4"> MacBook Air 13" M4</label>
   <label><input type="checkbox" value="MacBook Air 15 M4"> MacBook Air 15" M4</label>
@@ -227,8 +228,9 @@ if(userPass !== password){
   const storeId = document.getElementById('storeId').value || 'device-return';
   pdf.save(`${storeId}-Device-Handover.pdf`);
 
-  alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".\n\nYou can dismiss this message and attach the PDF manually.`);
 }
+
+    alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".\n\nYou can dismiss this message and attach the PDF manually.`);
 
 // Helper function to convert File to Data URL
 function fileToDataURL(file){
