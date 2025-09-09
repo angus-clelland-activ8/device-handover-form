@@ -225,7 +225,7 @@ if(userPass !== password){
   const storeId = document.getElementById('storeId').value || 'device-return';
   pdf.save(`${storeId}-Device-Handover.pdf`);
 
-      alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".\n\nYou can dismiss this message and attach the PDF manually.`);
+  alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".\n\nYou can dismiss this message and attach the PDF manually.`);
 }
 
 // Helper function to convert File to Data URL
