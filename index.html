@@ -47,31 +47,27 @@ if(userPass !== password){
   margin-top: 10px;
 }
 
-/* Each item is a row with checkbox + label */
-.device-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;         /* space between checkbox and text */
-  margin-bottom: 6px;
-}
+/* Checklist styling */
+  .device-list {
+    margin-top: 10px;
+  }
 
-/* Make sure checkboxes don't stretch because of your global input rule */
-.device-item input[type="checkbox"] {
-  width: auto !important;    /* important only to override broad global rules */
-  height: auto !important;
-  margin: 0;                 /* remove unexpected default margins */
-  padding: 0;
-  box-sizing: content-box;
-  vertical-align: middle;
-}
+  .device-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;   /* space between rows */
+  }
 
-/* Label is normal inline text and clickable */
-.device-item label {
-  display: inline-block;
-  cursor: pointer;
-  margin: 0;
-  line-height: 1.2;
-}
+  .device-item input[type="checkbox"] {
+    width: auto;          /* prevent stretching */
+    margin-right: 8px;    /* space between box and text */
+  }
+
+  .device-item label {
+    margin: 0;
+    cursor: pointer;      /* clicking text toggles box */
+  }
+    
   </style>
 </head>
 <body>
@@ -109,53 +105,38 @@ if(userPass !== password){
     </label>
     
     
-    <style>
-  /* Add this to your existing <style> block */
-  .checkbox-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 5px;
-}
-
-.checkbox-list label {
-  display: flex;
-  align-items: center;
-  gap: 8px;        /* space between checkbox and text */
-  font-weight: normal;
-}
-
-.checkbox-list input[type="checkbox"] {
-  width: auto;      /* important! overrides the form-wide 100% width */
-  margin: 0;        /* remove extra margin */
-}
-</style>
-
-<label>Devices Returned:</label>
-<div id="devicesReturned"></div>
-
-<script>
+    <script>
+  // Load devices.txt and render checkboxes
   fetch("devices.txt")
-    .then(response => response.text())
+    .then(resp => resp.text())
     .then(text => {
-      const deviceList = text.split("\n").map(item => item.trim()).filter(Boolean);
+      const deviceList = text.split("\n").map(s => s.trim()).filter(Boolean);
       const container = document.getElementById("devicesReturned");
+      container.innerHTML = ''; // clear any old content
 
-      deviceList.forEach(device => {
-        const label = document.createElement("label");
-        label.style.display = "inline-block";
-        label.style.marginRight = "15px";
+      deviceList.forEach((device, idx) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "device-item";
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.value = device;
+        const id = "device-" + idx;
+        checkbox.id = id;
 
-        label.appendChild(checkbox);
-        label.append(" " + device);
-        container.appendChild(label);
+        const label = document.createElement("label");
+        label.setAttribute("for", id);
+        label.textContent = device;
+
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
       });
     })
-    .catch(error => console.error("Error loading devices.txt:", error));
+    .catch(err => {
+      console.error("Error loading devices.txt:", err);
+      document.getElementById("devicesReturned").textContent = "Could not load devices.";
+    });
 </script>
 
 
