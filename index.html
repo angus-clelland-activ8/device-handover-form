@@ -223,7 +223,7 @@ if(userPass !== password){
   }
 
   const storeId = document.getElementById('storeId').value || 'device-return';
-  pdf.save(`${storeId}.pdf`);
+  pdf.save(`${storeId}${storeName}-Device-Handover.pdf`);
 }
 
 // Helper function to convert File to Data URL
