@@ -28,19 +28,13 @@
     button { margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background: black; color: white; cursor: pointer; }
     button:hover { opacity: 0.9; }
     .images-preview img { max-height: 100px; margin: 5px; border: 1px solid #ccc; border-radius: 6px; }
-
     .header-image { text-align: center; margin-bottom: 20px; }
     .header-image img { max-width: 300px; height: auto; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-
-    /* checklist styles */
     .device-list { margin-top: 10px; }
     .device-item { display: flex; align-items: center; margin-bottom: 6px; }
     .device-item input[type="checkbox"] { width: auto; margin: 0 8px 0 0; }
     .device-item label { margin: 0; cursor: pointer; line-height: 1.2; }
-
     .example-text { font-size: 0.85em; color: #555; margin-left: 5px; display: inline-block; vertical-align: middle; }
-
-    /* small responsive fix so long device labels wrap nicely */
     @media (max-width: 480px) {
       .device-item { font-size: 14px; }
     }
@@ -117,7 +111,7 @@
       </select>
     </label>
 
-    <label>Images of Devices with their accessories:
+    <label>Upload images of devices:
       <input type="file" id="accessoryImage" accept="image/*" multiple>
     </label>
     <div id="accessoryPreview" class="images-preview"></div>
@@ -153,7 +147,7 @@
   </form>
 
   <script>
-    // build device checklist from devices.txt (one item per line)
+    // load devices list
     fetch("devices.txt")
       .then(r => r.text())
       .then(text => {
@@ -163,30 +157,22 @@
         deviceList.forEach((device, i) => {
           const row = document.createElement("div");
           row.className = "device-item";
-
           const cb = document.createElement("input");
           cb.type = "checkbox";
           cb.id = "device-" + i;
           cb.value = device;
-
           const label = document.createElement("label");
           label.htmlFor = cb.id;
           label.textContent = device;
-
           row.appendChild(cb);
           row.appendChild(label);
           container.appendChild(row);
         });
-      })
-      .catch(err => {
-        console.error("Could not load devices.txt:", err);
-        document.getElementById("devicesReturned").textContent = "Unable to load device list.";
       });
 
     // signature
     const canvas = document.getElementById('signature-pad');
     const signaturePad = new SignaturePad(canvas);
-
     function clearSignature() { signaturePad.clear(); }
 
     // preview images
@@ -206,25 +192,22 @@
     document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
     document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
 
-    // helper: resize & compress image and return data + dimensions
+    // helper: compress image
     function fileToDataURL(file){
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve, reject)=>{
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
           img.onload = () => {
-            // draw to canvas scaled (maintain aspect)
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            const maxWidth = 1200; // bigger max for quality; PDF will scale down as needed
+            const maxWidth = 1000;
             const scale = Math.min(maxWidth / img.width, 1);
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            // compress as JPEG
-            resolve({ data: canvas.toDataURL('image/jpeg', 0.75), width: canvas.width, height: canvas.height });
+            resolve({ data: canvas.toDataURL('image/jpeg', 0.7), width: canvas.width, height: canvas.height });
           };
-          img.onerror = () => reject(new Error("Image load error"));
           img.src = e.target.result;
         };
         reader.onerror = reject;
@@ -232,118 +215,125 @@
       });
     }
 
-    // add images to PDF with page-break handling; returns updated y
-    async function addImagesToPDF(files, pdf, title, x, yStart) {
+    async function urlToFile(url){
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new File([blob], "header.png", { type: blob.type });
+    }
+
+    async function addImagesToPDF(files, pdf, title, pageWidth, yStart) {
       let y = yStart;
-      const lineHeight = 18;
+      const lineHeight = 22;
       const marginBottom = 40;
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
       if (!files || files.length === 0) return y;
 
-      // add title once
-      pdf.setFontSize(12);
-      pdf.text(title + ":", x, y);
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, "bold");
+      pdf.text(title, 40, y);
+      pdf.setFont(undefined, "normal");
       y += lineHeight;
 
       for (const file of files) {
         const imgObj = await fileToDataURL(file);
-        // compute fit-to-box while preserving aspect
-        const maxW = pdf.internal.pageSize.getWidth() - x - 40; // right margin
-        const maxH = 400; // reasonable max image height on PDF
+        const maxW = pageWidth - 80;
+        const maxH = pageHeight - 120;
         const scale = Math.min(maxW / imgObj.width, maxH / imgObj.height, 1);
         const w = imgObj.width * scale;
         const h = imgObj.height * scale;
+        const x = (pageWidth - w) / 2;
 
-        // page break if image won't fit
-        const pageHeight = pdf.internal.pageSize.getHeight();
         if (y + h > pageHeight - marginBottom) {
           pdf.addPage();
-          y = 40;
-          // re-print section title on new page (optional)
-          pdf.text(title + " (continued):", x, y);
-          y += lineHeight;
+          y = 60;
         }
 
         pdf.addImage(imgObj.data, 'JPEG', x, y, w, h);
-        y += h + 10;
+        y += h + 20;
+        pdf.addPage();
+        y = 60;
       }
-
       return y;
     }
 
     async function generatePDF() {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'pt', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       let y = 40;
-      const lineHeight = 20;
+      const lineHeight = 22;
 
-      // small helper that uses the outer `y` and page height
-      function checkPageBreak(space = 40) {
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        if (y + space > pageHeight) {
+      function checkPageBreak(space = 60) {
+        if (y + space > pageHeight - 40) {
           pdf.addPage();
           y = 40;
         }
       }
 
-      pdf.setFontSize(16);
-      pdf.text("Device Return Form", 40, y);
-      y += lineHeight * 2;
-
-      pdf.setFontSize(12);
-      pdf.text(`Store ID: ${document.getElementById('storeId').value}`, 40, y); y += lineHeight;
-      pdf.text(`Retailer: ${document.getElementById('storeName').value}`, 40, y); y += lineHeight;
-      pdf.text(`Store Location: ${document.getElementById('storeLocation').value}`, 40, y); y += lineHeight;
-
-      // devices
-      const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
-      pdf.text("Devices Returned:", 40, y); y += lineHeight;
-      devicesChecked.forEach(device => {
-        checkPageBreak(lineHeight);
-        pdf.text(`- ${device}`, 60, y);
-        y += lineHeight;
-      });
-
-      // other devices
-      checkPageBreak(lineHeight);
-      pdf.text(`Other Devices: ${document.getElementById('otherDevices').value}`, 40, y); y += lineHeight;
-
-      checkPageBreak(lineHeight);
-      pdf.text(`Any Devices Damaged: ${document.getElementById('damaged').value}`, 40, y); y += lineHeight;
-
-      checkPageBreak(lineHeight);
-      pdf.text(`Return Date & Time: ${document.getElementById('returnDateTime').value}`, 40, y); y += lineHeight;
-
-      checkPageBreak(lineHeight);
-      pdf.text(`Returned To: ${document.getElementById('storeMember').value}`, 40, y); y += lineHeight;
-
-      checkPageBreak(lineHeight);
-      pdf.text(`Position: ${document.getElementById('storePosition').value}`, 40, y); y += lineHeight;
-
-      checkPageBreak(lineHeight);
-      pdf.text(`Phone: ${document.getElementById('storePhone').value}`, 40, y); y += lineHeight;
-
-      // accessory images - update y with returned value
-      y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", 40, y);
-
-      // damage images - update y with returned value
-      y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", 40, y);
-
-      // signature - ensure we have space else page break
-      if (!signaturePad.isEmpty()) {
-        checkPageBreak(80);
-        pdf.text("Signature:", 40, y); y += lineHeight;
-        const sigData = signaturePad.toDataURL();
-        pdf.addImage(sigData, 'PNG', 40, y, 150, 50);
-        y += 60;
+      function addField(label, value) {
+        checkPageBreak(50);
+        pdf.setFontSize(12);
+        pdf.setFillColor(240, 240, 240);
+        pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
+        y += lineHeight * 2;
       }
 
-      const storeId = document.getElementById('storeId').value || 'device-return';
-      const fileName = `${storeId}-Device-Handover.pdf`;
-      pdf.save(fileName);
+      function addHeading(title) {
+        checkPageBreak(40);
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, "bold");
+        pdf.text(title, 40, y);
+        pdf.setFont(undefined, "normal");
+        y += lineHeight;
+      }
 
-      // prompt user to email
-      alert(`The PDF has been saved as "${fileName}".\n\nPlease email this PDF to the Field Manager with subject "${storeId}-Device-Handover".`);
+      // header image
+      const headerImg = document.querySelector(".header-image img");
+      if (headerImg) {
+        const imgData = await fileToDataURL(await urlToFile(headerImg.src));
+        const ratio = imgData.width / imgData.height;
+        const w = pageWidth - 80;
+        const h = w / ratio;
+        pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
+        y += h + 20;
+      }
+
+      addHeading("Store Details");
+      addField("Store ID", document.getElementById('storeId').value);
+      addField("Retailer", document.getElementById('storeName').value);
+      addField("Store Location", document.getElementById('storeLocation').value);
+      addField("Team Member Name", document.getElementById('teamMember').value);
+
+      addHeading("Devices Returned");
+      const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
+      devicesChecked.forEach(device => addField("Device", device));
+      addField("Other Devices", document.getElementById('otherDevices').value);
+
+      addHeading("Damage Information");
+      addField("Any Devices Damaged", document.getElementById('damaged').value);
+
+      y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
+      y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
+
+      addHeading("Receiving Team Member Details");
+      addField("Returned To", document.getElementById('storeMember').value);
+      addField("Position", document.getElementById('storePosition').value);
+      addField("Phone", document.getElementById('storePhone').value);
+
+      addHeading("Store Team Member's Signature");
+      if (!signaturePad.isEmpty()) {
+        checkPageBreak(100);
+        const sigData = signaturePad.toDataURL();
+        pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
+      }
+      addField("Date & Time of Return", document.getElementById('returnDateTime').value);
+
+      const storeId = document.getElementById('storeId').value || 'device-return';
+      pdf.save(`${storeId}-Device-Handover.pdf`);
     }
   </script>
 </body>
