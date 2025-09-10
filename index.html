@@ -321,7 +321,7 @@
     y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
     y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
 
-    addHeading("Team Member Details");
+    addHeading("Store Team Member Details");
     addField("Returned To", document.getElementById('storeMember').value);
     addField("Position", document.getElementById('storePosition').value);
     addField("Phone", document.getElementById('storePhone').value);
