@@ -21,7 +21,9 @@
     body { font-family: SF Pro, sans-serif; background: #f9fafb; margin: 20px; }
     h1 { display: none; }
     form { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    form label:first-of-type { margin-top: 0; }
+    form label:first-of-type {
+  margin-top: 0;
+}
     label { display: block; margin-top: 25px; font-weight: bold; }
     input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
     .signature-container { border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; background: #fdfdfd; }
@@ -34,49 +36,26 @@
     .device-list { margin-top: 10px; }
     .device-item { display: flex; align-items: center; margin-bottom: 10px; }
     .device-item input[type="checkbox"] { width: auto; margin: 0 8px 0 0; }
-    .device-item label { margin: 0; cursor: pointer; line-height: 1.2; font-weight: normal; color: #333; }
+    .device-item label { margin: 0; cursor: pointer; line-height: 1.2; }
     .example-text { font-size: 0.85em; color: #555; margin-left: 5px; display: inline-block; vertical-align: middle; }
-    @media (max-width: 480px) { .device-item { font-size: 14px; } }
-
-    /* Share Modal Styling */
-    #shareModal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
+    @media (max-width: 480px) {
+      .device-item { font-size: 14px; }
     }
-    #shareModal .modal-content {
-      background: #fff;
-      padding: 25px;
-      border-radius: 10px;
-      max-width: 400px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    #shareModal h2 { margin-top: 0; }
-    #shareModal button {
-      margin: 10px 8px;
-      padding: 10px 20px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-    }
-    #shareModal .share-btn { background: black; color: white; }
-    #shareModal .cancel-btn { background: #ccc; }
+    .device-item label {
+  font-weight: normal;   /* makes them lighter */
+  color: #333;           /* optional: a softer dark grey instead of pure black */
+}
   </style>
 
-  <!-- iOS Home Screen App Icon -->
-  <link rel="apple-touch-icon" href="icon.png">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Device Handover Form">
+<!-- App Icons for iOS Add to Home Screen -->
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Device Handover Form">
+  
 </head>
-
 <body>
   <h1>Device Return Form</h1>
+
   <div class="header-image">
     <img src="devicehandoverimage.001.png" alt="Header Image">
   </div>
@@ -139,15 +118,15 @@
     </label>
 
     <label>Are any devices Damaged?
-      <select id="damaged">
-        <option value="">Select...</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-      </select>
-      <span class="example-text">
-        If Yes, make sure you have flagged to the Field Manager, and the Store Team is aware of this damage
-      </span>
-    </label>
+  <select id="damaged">
+    <option value="">Select...</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+  <span class="example-text">
+    If Yes, make sure you have flagged to the Field Manager, and the Store Team is aware of this damage
+  </span>
+</label>
 
     <label>Upload images of devices:
       <input type="file" id="accessoryImage" accept="image/*" multiple>
@@ -184,19 +163,11 @@
     <button type="button" onclick="generatePDF()">Export PDF</button>
   </form>
 
-  <!-- Share Modal -->
-  <div id="shareModal">
-    <div class="modal-content">
-      <h2>PDF Ready!</h2>
-      <p>Would you like to share the PDF using your iPhone share sheet?</p>
-      <button class="share-btn" id="confirmShare">Share Now</button>
-      <button class="cancel-btn" id="cancelShare">Cancel</button>
-    </div>
-  </div>
-
   <script>
-    // Device list
-    fetch("devices.txt").then(r => r.text()).then(text => {
+  // load devices list
+  fetch("devices.txt")
+    .then(r => r.text())
+    .then(text => {
       const deviceList = text.split("\n").map(s => s.trim()).filter(Boolean);
       const container = document.getElementById("devicesReturned");
       container.innerHTML = "";
@@ -204,198 +175,193 @@
         const row = document.createElement("div");
         row.className = "device-item";
         const cb = document.createElement("input");
-        cb.type = "checkbox"; cb.id = "device-" + i; cb.value = device;
+        cb.type = "checkbox";
+        cb.id = "device-" + i;
+        cb.value = device;
         const label = document.createElement("label");
-        label.htmlFor = cb.id; label.textContent = device;
-        row.appendChild(cb); row.appendChild(label);
+        label.htmlFor = cb.id;
+        label.textContent = device;
+        row.appendChild(cb);
+        row.appendChild(label);
         container.appendChild(row);
       });
     });
 
-    // Signature
-    const canvas = document.getElementById('signature-pad');
-    const signaturePad = new SignaturePad(canvas);
-    function clearSignature() { signaturePad.clear(); }
+  // signature
+  const canvas = document.getElementById('signature-pad');
+  const signaturePad = new SignaturePad(canvas);
+  function clearSignature() { signaturePad.clear(); }
 
-    // Preview images
-    function previewImages(input, previewContainer) {
-      const container = document.getElementById(previewContainer);
-      container.innerHTML = '';
-      Array.from(input.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          container.appendChild(img);
+  // preview images
+  function previewImages(input, previewContainer) {
+    const container = document.getElementById(previewContainer);
+    container.innerHTML = '';
+    Array.from(input.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        container.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
+  document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
+
+  // helper: compress image
+  function fileToDataURL(file){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxWidth = 1000;
+          const scale = Math.min(maxWidth / img.width, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve({ data: canvas.toDataURL('image/jpeg', 0.7), width: canvas.width, height: canvas.height });
         };
-        reader.readAsDataURL(file);
-      });
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function urlToFile(url){
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new File([blob], "header.png", { type: blob.type });
+  }
+
+  async function addImagesToPDF(files, pdf, title, pageWidth, yStart) {
+    let y = yStart;
+    const lineHeight = 22;
+    const marginBottom = 40;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    if (!files || files.length === 0) return y;
+
+    y += 10; // spacing before heading
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, "bold");
+    pdf.text(title, 40, y);
+    pdf.setFont(undefined, "normal");
+    y += lineHeight;
+
+    for (const file of files) {
+      const imgObj = await fileToDataURL(file);
+      const maxW = pageWidth - 80;
+      const maxH = pageHeight - 120;
+      const scale = Math.min(maxW / imgObj.width, maxH / imgObj.height, 1);
+      const w = imgObj.width * scale;
+      const h = imgObj.height * scale;
+      const x = (pageWidth - w) / 2;
+
+      if (y + h > pageHeight - marginBottom) {
+        pdf.addPage();
+        y = 60;
+      }
+
+      pdf.addImage(imgObj.data, 'JPEG', x, y, w, h);
+      y += h + 20;
+      pdf.addPage();
+      y = 60;
     }
-    document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
-    document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
+    return y;
+  }
 
-    // Helper: compress image
-    function fileToDataURL(file){
-      return new Promise((resolve, reject)=>{
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const maxWidth = 1000;
-            const scale = Math.min(maxWidth / img.width, 1);
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve({ data: canvas.toDataURL('image/jpeg', 0.7), width: canvas.width, height: canvas.height });
-          };
-          img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+  async function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let y = 40;
+    const lineHeight = 22;
+
+    function checkPageBreak(space = 60) {
+      if (y + space > pageHeight - 40) {
+        pdf.addPage();
+        y = 40;
+      }
     }
 
-    async function urlToFile(url){
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return new File([blob], "header.png", { type: blob.type });
+    function addField(label, value) {
+      checkPageBreak(50);
+      pdf.setFontSize(12);
+      pdf.setFillColor(240, 240, 240);
+      pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
+      y += lineHeight * 2;
     }
 
-    async function addImagesToPDF(files, pdf, title, pageWidth, yStart) {
-      let y = yStart;
-      const lineHeight = 22;
-      const marginBottom = 40;
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      if (!files || files.length === 0) return y;
-
-      y += 10;
+    function addHeading(title) {
+      y += 10; // space above headings
+      checkPageBreak(40);
       pdf.setFontSize(14);
       pdf.setFont(undefined, "bold");
       pdf.text(title, 40, y);
       pdf.setFont(undefined, "normal");
       y += lineHeight;
-
-      for (const file of files) {
-        const imgObj = await fileToDataURL(file);
-        const maxW = pageWidth - 80;
-        const maxH = pageHeight - 120;
-        const scale = Math.min(maxW / imgObj.width, maxH / imgObj.height, 1);
-        const w = imgObj.width * scale;
-        const h = imgObj.height * scale;
-        const x = (pageWidth - w) / 2;
-
-        if (y + h > pageHeight - marginBottom) {
-          pdf.addPage();
-          y = 60;
-        }
-
-        pdf.addImage(imgObj.data, 'JPEG', x, y, w, h);
-        y += h + 20;
-        pdf.addPage();
-        y = 60;
-      }
-      return y;
     }
 
-    async function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'pt', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      let y = 40;
-      const lineHeight = 22;
+    // header image
+    const headerImg = document.querySelector(".header-image img");
+    if (headerImg) {
+      const imgData = await fileToDataURL(await urlToFile(headerImg.src));
+      const ratio = imgData.width / imgData.height;
+      const w = pageWidth - 80;
+      const h = w / ratio;
+      pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
+      y += h + 20;
+    }
 
-      function checkPageBreak(space = 60) {
-        if (y + space > pageHeight - 40) {
-          pdf.addPage();
-          y = 40;
-        }
-      }
+    addHeading("Store Details");
+    addField("Store ID", document.getElementById('storeId').value);
+    addField("Retailer", document.getElementById('storeName').value);
+    addField("Store Location", document.getElementById('storeLocation').value);
+    addField("Team Member Name", document.getElementById('teamMember').value);
 
-      function addField(label, value) {
-        checkPageBreak(50);
-        pdf.setFontSize(12);
-        pdf.setFillColor(240, 240, 240);
-        pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
-        y += lineHeight * 2;
-      }
+    addHeading("Devices Returned");
+    const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
+    devicesChecked.forEach(device => addField("Device", device));
+    addField("Other Devices", document.getElementById('otherDevices').value);
 
-      function addHeading(title) {
-        y += 10;
-        checkPageBreak(40);
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, "bold");
-        pdf.text(title, 40, y);
-        pdf.setFont(undefined, "normal");
-        y += lineHeight;
-      }
+    addHeading("Damage Information");
+    addField("Any Devices Damaged", document.getElementById('damaged').value);
 
-      // Header image
-      const headerImg = document.querySelector(".header-image img");
-      if (headerImg) {
-        const imgData = await fileToDataURL(await urlToFile(headerImg.src));
-        const ratio = imgData.width / imgData.height;
-        const w = pageWidth - 80;
-        const h = w / ratio;
-        pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
-        y += h + 20;
-      }
+    y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
+    y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
 
-      addHeading("Store Details");
-      addField("Store ID", document.getElementById('storeId').value);
-      addField("Retailer", document.getElementById('storeName').value);
-      addField("Store Location", document.getElementById('storeLocation').value);
-      addField("Team Member Name", document.getElementById('teamMember').value);
+    addHeading("Store Team Member Details");
+    addField("Returned To", document.getElementById('storeMember').value);
+    addField("Position", document.getElementById('storePosition').value);
+    addField("Phone", document.getElementById('storePhone').value);
 
-      addHeading("Devices Returned");
-      const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
-      devicesChecked.forEach(device => addField("Device", device));
-      addField("Other Devices", document.getElementById('otherDevices').value);
+    addHeading("Store Team Member's Signature");
+    if (!signaturePad.isEmpty()) {
+      checkPageBreak(120);
+      const sigData = signaturePad.toDataURL();
+      pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
+      y += 80;
+    }
 
-      addHeading("Damage Information");
-      addField("Any Devices Damaged", document.getElementById('damaged').value);
+    // format date & time under signature
+    const dateTime = document.getElementById('returnDateTime').value;
+    if (dateTime) {
+      const formatted = new Date(dateTime).toLocaleString("en-NZ", {
+        dateStyle: "short",
+        timeStyle: "short"
+      });
+      addField("Date & Time of Return", formatted);
+    }
 
-      y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
-      y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
-
-      addHeading("Team Member Details");
-      addField("Returned To", document.getElementById('storeMember').value);
-      addField("Position", document.getElementById('storePosition').value);
-      addField("Phone", document.getElementById('storePhone').value);
-
-      addHeading("Store Team Member's Signature");
-      if (!signaturePad.isEmpty()) {
-        checkPageBreak(120);
-        const sigData = signaturePad.toDataURL();
-        pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
-        y += 80;
-      }
-
-      const dateTime = document.getElementById('returnDateTime').value;
-      if (dateTime) {
-        const formatted = new Date(dateTime).toLocaleString("en-NZ", {
-          dateStyle: "short",
-          timeStyle: "short"
-        });
-        addField("Date & Time of Return", formatted);
-      }
-
-      const storeId = document.getElementById('storeId').value || 'device-return';
-      const fileName = `${storeId}-Device-Handover.pdf`;
-      const pdfBlob = pdf.output('blob');
-      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-      const shareModal = document.getElementById('shareModal');
-      shareModal.style.display = 'flex';
-
-      document.getElementById('confirmShare').onclick = async () => {
-        shareModal.style.display = 'none';
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              title: 'Device Handover Form',
-              text: 'Here is my Device Handover Form!'
+    const storeId = document.getElementById('storeId').value || 'device-return';
+    pdf.save(`${storeId}-Device-Handover.pdf`);
+  }
+</script>
