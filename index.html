@@ -1,367 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <script>
-    const password = "Activ8";
-    let userPass = prompt("Enter password to access the Device Return Form:");
-    if (userPass !== password) {
-      alert("Incorrect password. Access denied.");
-      window.location = "https://www.google.com";
+async function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  let y = 40;
+  const lineHeight = 22;
+
+  function checkPageBreak(space = 60) {
+    if (y + space > pageHeight - 40) {
+      pdf.addPage();
+      y = 40;
     }
-  </script>
-
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Activ8 Device Return Form</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-
-  <style>
-    body { font-family: SF Pro, sans-serif; background: #f9fafb; margin: 20px; }
-    h1 { display: none; }
-    form { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    form label:first-of-type {
-  margin-top: 0;
-}
-    label { display: block; margin-top: 25px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
-    .signature-container { border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; background: #fdfdfd; }
-    canvas { width: 100%; height: 150px; }
-    button { margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background: black; color: white; cursor: pointer; }
-    button:hover { opacity: 0.9; }
-    .images-preview img { max-height: 100px; margin: 5px; border: 1px solid #ccc; border-radius: 6px; }
-    .header-image { text-align: center; margin-bottom: 20px; }
-    .header-image img { max-width: 300px; height: auto; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .device-list { margin-top: 10px; }
-    .device-item { display: flex; align-items: center; margin-bottom: 10px; }
-    .device-item input[type="checkbox"] { width: auto; margin: 0 8px 0 0; }
-    .device-item label { margin: 0; cursor: pointer; line-height: 1.2; }
-    .example-text { font-size: 0.85em; color: #555; margin-left: 5px; display: inline-block; vertical-align: middle; }
-    @media (max-width: 480px) {
-      .device-item { font-size: 14px; }
-    }
-    .device-item label {
-  font-weight: normal;   /* makes them lighter */
-  color: #333;           /* optional: a softer dark grey instead of pure black */
-}
-  </style>
-
-<!-- App Icons for iOS Add to Home Screen -->
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Device Handover Form">
-  
-</head>
-<body>
-  <h1>Device Return Form</h1>
-
-  <div class="header-image">
-    <img src="devicehandoverimage.001.png" alt="Header Image">
-  </div>
-
-  <form id="returnForm">
-    <label>Store ID:
-      <input type="number" id="storeId" inputmode="numeric" pattern="[0-9]*" placeholder="Enter Store ID">
-    </label>
-
-    <label>Retailer:
-      <select id="storeName">
-        <option>**SELECT RETAILER**</option>
-        <option>Noel Leeming</option>
-        <option>Harvey Norman</option>
-        <option>JB HI-FI</option>
-        <option>PB Tech</option>
-        <option>One NZ</option>
-        <option>Spark</option>
-      </select>
-    </label>
-
-    <label>
-      Store Location:
-      <input type="text" id="storeLocation" placeholder="Enter store location">
-      <span class="example-text">(e.g. Newmarket, Riccarton etc.)</span>
-    </label>
-
-    <label>Team Member Name:
-      <select id="teamMember">
-        <option>**SELECT NAME**</option>
-        <option>Ruth Varkey</option>
-        <option>Elliot Wilton</option>
-        <option>Tess Wang</option>
-        <option>Cody Garton</option>
-        <option>Erin Bidois</option>
-        <option>Abbie Jacobs</option>
-        <option>Raukāhu Gray-Sharp</option>
-        <option>Finlay Davies</option>
-        <option>Sid Mowat</option>
-        <option>Amelia Johnston</option>
-        <option>Michael Bailey</option>
-        <option>Angus Clelland</option>
-        <option>Ben Crowley</option>
-        <option>Fenil Desai</option>
-        <option>Janneke Grundemann</option>
-        <option>Doug Kriel</option>
-        <option>Riley Aitkin</option>
-        <option>Brian Jarraeu</option>
-        <option>Diane Hyslop</option>
-      </select>
-    </label>
-
-    <label>Devices Returned (Where there are double ups of devices, only tick both if you are returning 2x of that model):</label>
-    <div id="devicesReturned" class="device-list"></div>
-
-    <label for="otherDevices">
-      Other Devices (if not in list):
-      <input type="text" id="otherDevices" placeholder="Enter other devices">
-      <span class="example-text">(e.g. iPhone 16 Pro Max Black, Apple Watch SE 44mm Midnight)</span>
-    </label>
-
-    <label>Are any devices Damaged?
-  <select id="damaged">
-    <option value="">Select...</option>
-    <option value="Yes">Yes</option>
-    <option value="No">No</option>
-  </select>
-  <span class="example-text">
-    If Yes, make sure you have flagged to the Field Manager, and the Store Team is aware of this damage
-  </span>
-</label>
-
-    <label>Upload images of devices:
-      <input type="file" id="accessoryImage" accept="image/*" multiple>
-    </label>
-    <div id="accessoryPreview" class="images-preview"></div>
-
-    <label>Upload images of damage:
-      <input type="file" id="damageImages" accept="image/*" multiple>
-    </label>
-    <div id="damagePreview" class="images-preview"></div>
-
-    <label>Date and Time of return:
-      <input type="datetime-local" id="returnDateTime">
-    </label>
-
-    <label>Store Team Member (who devices are being returned to):
-      <input type="text" id="storeMember">
-    </label>
-
-    <label>Store Team Member Position:
-      <input type="text" id="storePosition">
-    </label>
-
-    <label>Store Team Member Phone Number:
-      <input type="tel" id="storePhone" inputmode="tel" placeholder="Enter Phone Number">
-    </label>
-
-    <label>Store Team Member Signature:</label>
-    <div class="signature-container">
-      <canvas id="signature-pad"></canvas>
-    </div>
-
-    <button type="button" onclick="clearSignature()">Clear Signature</button>
-    <button type="button" onclick="generatePDF()">Export PDF</button>
-  </form>
-
-  <script>
-  // load devices list
-  fetch("devices.txt")
-    .then(r => r.text())
-    .then(text => {
-      const deviceList = text.split("\n").map(s => s.trim()).filter(Boolean);
-      const container = document.getElementById("devicesReturned");
-      container.innerHTML = "";
-      deviceList.forEach((device, i) => {
-        const row = document.createElement("div");
-        row.className = "device-item";
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.id = "device-" + i;
-        cb.value = device;
-        const label = document.createElement("label");
-        label.htmlFor = cb.id;
-        label.textContent = device;
-        row.appendChild(cb);
-        row.appendChild(label);
-        container.appendChild(row);
-      });
-    });
-
-  // signature
-  const canvas = document.getElementById('signature-pad');
-  const signaturePad = new SignaturePad(canvas);
-  function clearSignature() { signaturePad.clear(); }
-
-  // preview images
-  function previewImages(input, previewContainer) {
-    const container = document.getElementById(previewContainer);
-    container.innerHTML = '';
-    Array.from(input.files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        container.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-  document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
-  document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
-
-  // helper: compress image
-  function fileToDataURL(file){
-    return new Promise((resolve, reject)=>{
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          const maxWidth = 1000;
-          const scale = Math.min(maxWidth / img.width, 1);
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve({ data: canvas.toDataURL('image/jpeg', 0.7), width: canvas.width, height: canvas.height });
-        };
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   }
 
-  async function urlToFile(url){
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new File([blob], "header.png", { type: blob.type });
+  function addField(label, value) {
+    checkPageBreak(50);
+    pdf.setFontSize(12);
+    pdf.setFillColor(240, 240, 240);
+    pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
+    y += lineHeight * 2;
   }
 
-  async function addImagesToPDF(files, pdf, title, pageWidth, yStart) {
-    let y = yStart;
-    const lineHeight = 22;
-    const marginBottom = 40;
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    if (!files || files.length === 0) return y;
-
-    y += 10; // spacing before heading
+  function addHeading(title) {
+    y += 10; // space above headings
+    checkPageBreak(40);
     pdf.setFontSize(14);
     pdf.setFont(undefined, "bold");
     pdf.text(title, 40, y);
     pdf.setFont(undefined, "normal");
     y += lineHeight;
-
-    for (const file of files) {
-      const imgObj = await fileToDataURL(file);
-      const maxW = pageWidth - 80;
-      const maxH = pageHeight - 120;
-      const scale = Math.min(maxW / imgObj.width, maxH / imgObj.height, 1);
-      const w = imgObj.width * scale;
-      const h = imgObj.height * scale;
-      const x = (pageWidth - w) / 2;
-
-      if (y + h > pageHeight - marginBottom) {
-        pdf.addPage();
-        y = 60;
-      }
-
-      pdf.addImage(imgObj.data, 'JPEG', x, y, w, h);
-      y += h + 20;
-      pdf.addPage();
-      y = 60;
-    }
-    return y;
   }
 
-  async function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'pt', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let y = 40;
-    const lineHeight = 22;
+  // Header image
+  const headerImg = document.querySelector(".header-image img");
+  if (headerImg) {
+    const imgData = await fileToDataURL(await urlToFile(headerImg.src));
+    const ratio = imgData.width / imgData.height;
+    const w = pageWidth - 80;
+    const h = w / ratio;
+    pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
+    y += h + 20;
+  }
 
-    function checkPageBreak(space = 60) {
-      if (y + space > pageHeight - 40) {
-        pdf.addPage();
-        y = 40;
+  addHeading("Store Details");
+  addField("Store ID", document.getElementById('storeId').value);
+  addField("Retailer", document.getElementById('storeName').value);
+  addField("Store Location", document.getElementById('storeLocation').value);
+  addField("Team Member Name", document.getElementById('teamMember').value);
+
+  addHeading("Devices Returned");
+  const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
+  devicesChecked.forEach(device => addField("Device", device));
+  addField("Other Devices", document.getElementById('otherDevices').value);
+
+  addHeading("Damage Information");
+  addField("Any Devices Damaged", document.getElementById('damaged').value);
+
+  y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
+  y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
+
+  addHeading("Team Member Details");
+  addField("Returned To", document.getElementById('storeMember').value);
+  addField("Position", document.getElementById('storePosition').value);
+  addField("Phone", document.getElementById('storePhone').value);
+
+  addHeading("Store Team Member's Signature");
+  if (!signaturePad.isEmpty()) {
+    checkPageBreak(120);
+    const sigData = signaturePad.toDataURL();
+    pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
+    y += 80;
+  }
+
+  const dateTime = document.getElementById('returnDateTime').value;
+  if (dateTime) {
+    const formatted = new Date(dateTime).toLocaleString("en-NZ", {
+      dateStyle: "short",
+      timeStyle: "short"
+    });
+    addField("Date & Time of Return", formatted);
+  }
+
+  const storeId = document.getElementById('storeId').value || 'device-return';
+  const fileName = `${storeId}-Device-Handover.pdf`;
+
+  // Convert PDF to Blob for sharing or download
+  const pdfBlob = pdf.output('blob');
+
+  try {
+    // Check if browser supports Web Share API with files
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([], '')] })) {
+      const shareConfirm = confirm("✅ PDF generated successfully.\n\nWould you like to share it now?");
+      if (shareConfirm) {
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        await navigator.share({
+          title: 'Device Handover Form',
+          text: 'Here is my Device Handover Form from ' + storeId,
+          files: [file]
+        });
+        alert("✅ PDF shared successfully!");
+        return; // Skip download if shared
       }
     }
-
-    function addField(label, value) {
-      checkPageBreak(50);
-      pdf.setFontSize(12);
-      pdf.setFillColor(240, 240, 240);
-      pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
-      y += lineHeight * 2;
-    }
-
-    function addHeading(title) {
-      y += 10; // space above headings
-      checkPageBreak(40);
-      pdf.setFontSize(14);
-      pdf.setFont(undefined, "bold");
-      pdf.text(title, 40, y);
-      pdf.setFont(undefined, "normal");
-      y += lineHeight;
-    }
-
-    // header image
-    const headerImg = document.querySelector(".header-image img");
-    if (headerImg) {
-      const imgData = await fileToDataURL(await urlToFile(headerImg.src));
-      const ratio = imgData.width / imgData.height;
-      const w = pageWidth - 80;
-      const h = w / ratio;
-      pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
-      y += h + 20;
-    }
-
-    addHeading("Store Details");
-    addField("Store ID", document.getElementById('storeId').value);
-    addField("Retailer", document.getElementById('storeName').value);
-    addField("Store Location", document.getElementById('storeLocation').value);
-    addField("Team Member Name", document.getElementById('teamMember').value);
-
-    addHeading("Devices Returned");
-    const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
-    devicesChecked.forEach(device => addField("Device", device));
-    addField("Other Devices", document.getElementById('otherDevices').value);
-
-    addHeading("Damage Information");
-    addField("Any Devices Damaged", document.getElementById('damaged').value);
-
-    y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
-    y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
-
-    addHeading("Store Team Member Details");
-    addField("Returned To", document.getElementById('storeMember').value);
-    addField("Position", document.getElementById('storePosition').value);
-    addField("Phone", document.getElementById('storePhone').value);
-
-    addHeading("Store Team Member's Signature");
-    if (!signaturePad.isEmpty()) {
-      checkPageBreak(120);
-      const sigData = signaturePad.toDataURL();
-      pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
-      y += 80;
-    }
-
-    // format date & time under signature
-    const dateTime = document.getElementById('returnDateTime').value;
-    if (dateTime) {
-      const formatted = new Date(dateTime).toLocaleString("en-NZ", {
-        dateStyle: "short",
-        timeStyle: "short"
-      });
-      addField("Date & Time of Return", formatted);
-    }
-
-    const storeId = document.getElementById('storeId').value || 'device-return';
-    pdf.save(`${storeId}-Device-Handover.pdf`);
+  } catch (error) {
+    console.error("Sharing failed:", error);
   }
-</script>
+
+  // Fallback: download if sharing not supported or declined
+  pdf.save(fileName);
+  alert(`✅ The PDF has been saved as "${fileName}".\n\nPlease message this PDF to you the Device Handovers chat manually.`);
+}
