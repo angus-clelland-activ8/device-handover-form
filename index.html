@@ -18,41 +18,224 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
   <style>
-    body { font-family: SF Pro, sans-serif; background: #f9fafb; margin: 20px; }
+    :root {
+      --ios-blue: #007AFF;
+      --ios-red: #FF3B30;
+      --ios-bg: #F2F2F7;
+      --ios-card-bg: #FFFFFF;
+      --ios-label-gray: #6E6E73;
+      --ios-border: #E5E5EA;
+      --ios-text: #1C1C1E;
+      --ios-secondary-btn-bg: #E5E5EA;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      background: var(--ios-bg);
+      color: var(--ios-text);
+      margin: 0;
+      padding: 20px 16px 60px;
+      -webkit-font-smoothing: antialiased;
+    }
+
     h1 { display: none; }
-    form { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    form label:first-of-type {
-  margin-top: 0;
-}
-    label { display: block; margin-top: 25px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-    input.field-error, select.field-error { border-color: #d33; background: #fff5f5; }
-    .signature-container { border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; background: #fdfdfd; }
-    canvas { width: 100%; height: 150px; display: block; }
-    button { margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background: black; color: white; cursor: pointer; }
-    button:hover { opacity: 0.9; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .images-preview img { max-height: 100px; margin: 5px; border: 1px solid #ccc; border-radius: 6px; }
-    .header-image { text-align: center; margin-bottom: 20px; }
-    .header-image img { max-width: 300px; height: auto; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .device-list { margin-top: 10px; }
-    .device-item { display: flex; align-items: center; margin-bottom: 10px; }
-    .device-item input[type="checkbox"] { width: auto; margin: 0 8px 0 0; }
-    .device-item label { margin: 0; cursor: pointer; line-height: 1.2; }
-    .example-text { font-size: 0.85em; color: #555; margin-left: 5px; display: inline-block; vertical-align: middle; }
-    .error-text { font-size: 0.85em; color: #d33; margin-top: 4px; display: none; }
-    .error-text.visible { display: block; }
-    .status-banner { max-width: 800px; margin: 10px auto 0; padding: 10px 14px; border-radius: 6px; font-size: 0.9em; display: none; }
+
+    .page-wrap { max-width: 480px; margin: 0 auto; }
+
+    /* header image, cropped ~15% shorter via JS */
+    .header-image {
+      max-width: 320px;
+      margin: 0 auto 24px;
+      overflow: hidden;
+      border-radius: 18px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .header-image img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* status banners */
+    .status-banner {
+      max-width: 480px;
+      margin: 0 auto 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      display: none;
+    }
     .status-banner.visible { display: block; }
-    .status-banner.info { background: #eef2ff; color: #333; }
-    .status-banner.error { background: #fdecec; color: #a11; }
+    .status-banner.info { background: #E8F2FF; color: #0B5FCC; }
+    .status-banner.error { background: #FFECEB; color: #C22; }
+
+    /* grouped sections, iOS Settings-style */
+    .ios-section { margin-bottom: 28px; }
+    .ios-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ios-label-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 0 16px 8px;
+    }
+    .ios-card {
+      background: var(--ios-card-bg);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .ios-row {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ios-border);
+    }
+    .ios-row:last-child { border-bottom: none; }
+
+    .ios-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ios-label-gray);
+      margin-bottom: 4px;
+    }
+
+    .ios-input, .ios-select {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 17px;
+      color: var(--ios-text);
+      font-family: inherit;
+    }
+    .ios-input:focus, .ios-select:focus { outline: none; }
+    .ios-input::placeholder { color: #B0B0B5; }
+
+    .ios-input.field-error, .ios-select.field-error {
+      color: var(--ios-red);
+    }
+
+    .select-wrap { position: relative; }
+    .ios-select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 20px;
+      cursor: pointer;
+    }
+    .select-wrap::after {
+      content: '';
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-right: 1.5px solid #C7C7CC;
+      border-bottom: 1.5px solid #C7C7CC;
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .example-text {
+      font-size: 12.5px;
+      color: var(--ios-label-gray);
+      display: block;
+      margin-top: 4px;
+    }
+
+    .error-text {
+      font-size: 12.5px;
+      color: var(--ios-red);
+      margin-top: 4px;
+      display: none;
+    }
+    .error-text.visible { display: block; }
+
+    .device-list { margin-top: 4px; }
+    .device-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .device-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 0 10px 0 0;
+      accent-color: var(--ios-blue);
+      flex-shrink: 0;
+    }
+    .device-item label {
+      margin: 0;
+      cursor: pointer;
+      line-height: 1.3;
+      font-size: 15.5px;
+      font-weight: 400;
+      color: var(--ios-text);
+    }
+
+    input[type="file"].ios-input {
+      font-size: 14px;
+      color: var(--ios-label-gray);
+    }
+
+    .images-preview { margin-top: 8px; }
+    .images-preview img {
+      max-height: 90px;
+      margin: 4px 6px 4px 0;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+
+    canvas { width: 100%; height: 150px; display: block; }
+    .signature-container {
+      border-radius: 10px;
+      margin-top: 8px;
+      background: #FAFAFC;
+      border: 1px solid var(--ios-border);
+    }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; padding: 0 2px; }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15.5px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.08s ease, opacity 0.08s ease;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: var(--ios-secondary-btn-bg);
+      color: var(--ios-blue);
+      flex: 1;
+    }
+    .btn-primary {
+      background: var(--ios-blue);
+      color: #fff;
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px 18px;
+      font-size: 16.5px;
+    }
+
+    .instructions {
+      font-size: 13px;
+      color: var(--ios-label-gray);
+      background: #FFF9E8;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin: 20px 0 4px;
+      line-height: 1.4;
+    }
+
     @media (max-width: 480px) {
       .device-item { font-size: 14px; }
     }
-    .device-item label {
-  font-weight: normal;   /* makes them lighter */
-  color: #333;           /* optional: a softer dark grey instead of pure black */
-}
   </style>
 
 <!-- App Icons for iOS Add to Home Screen -->
@@ -60,6 +243,696 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Device Handover Form">
 
+</head>
+<body>
+  <h1>Device Return Form</h1>
+
+  <div class="page-wrap">
+
+    <div class="header-image">
+      <img src="devicehandoverimage.001.png" alt="Header Image">
+    </div>
+
+    <div id="devicesStatus" class="status-banner"></div>
+
+    <form id="returnForm">
+
+      <div class="ios-section">
+        <div class="ios-section-title">Store Details</div>
+        <div class="ios-card">
+          <div class="ios-row">
+            <label class="ios-label" for="storeId">Store ID</label>
+            <input class="ios-input" type="number" id="storeId" inputmode="numeric" pattern="[0-9]*" placeholder="Enter Store ID">
+            <span class="error-text" data-error-for="storeId">Please enter a Store ID.</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="storeName">Retailer</label>
+            <div class="select-wrap">
+              <select class="ios-select" id="storeName">
+                <option value="" disabled selected>Select Retailer</option>
+                <option>Noel Leeming</option>
+                <option>Harvey Norman</option>
+                <option>JB HI-FI</option>
+                <option>PB Tech</option>
+                <option>One NZ</option>
+                <option>Spark</option>
+              </select>
+            </div>
+            <span class="error-text" data-error-for="storeName">Please select a retailer.</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="storeLocation">Store Location</label>
+            <input class="ios-input" type="text" id="storeLocation" placeholder="Enter store location">
+            <span class="example-text">e.g. Newmarket, Riccarton etc.</span>
+            <span class="error-text" data-error-for="storeLocation">Please enter a store location.</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="teamMember">Team Member Name</label>
+            <div class="select-wrap">
+              <select class="ios-select" id="teamMember">
+                <option value="" disabled selected>Select Name</option>
+                <optgroup label="Activ8 Team">
+                  <option>Ruth Varkey</option>
+                  <option>Luke Myers</option>
+                  <option>Tess Wang</option>
+                  <option>Cody Garton</option>
+                  <option>Erin Bidois</option>
+                  <option>Abbie Jacobs</option>
+                  <option>Benjamin Baker</option>
+                  <option>Faith Jessop</option>
+                  <option>Alexis Broughton</option>
+                  <option>Noah Leaupepetele</option>
+                  <option>Michael Bailey</option>
+                  <option>Angus Clelland</option>
+                </optgroup>
+                <optgroup label="Activ8 Casuals">
+                  <option>Ben Crowley</option>
+                  <option>Fenil Desai</option>
+                  <option>Janneke Grundemann</option>
+                  <option>Doug Kriel</option>
+                  <option>Brian Jarraeu</option>
+                  <option>Diane Hyslop</option>
+                  <option>Sid Mowat</option>
+                  <option>Finlay Davies</option>
+                </optgroup>
+                <optgroup label="Pacificomm Field Team">
+                  <option>Vani Thangalan</option>
+                  <option>Sol Pattie</option>
+                  <option>Kali Hoffman</option>
+                  <option>Lisa Yung</option>
+                  <option>Raquel Ferreira</option>
+                  <option>Piers Crawford</option>
+                </optgroup>
+              </select>
+            </div>
+            <span class="error-text" data-error-for="teamMember">Please select your name.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ios-section">
+        <div class="ios-section-title">Devices</div>
+        <div class="ios-card">
+          <div class="ios-row">
+            <label class="ios-label">Devices Returned</label>
+            <span class="example-text">Where there are double ups of devices, only tick both if you are returning 2x of that model.</span>
+            <div id="devicesReturned" class="device-list"></div>
+            <span class="error-text" data-error-for="devicesReturned">Tick at least one device, or list one under "Other Devices".</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="otherDevices">Other Devices (if not in list)</label>
+            <input class="ios-input" type="text" id="otherDevices" placeholder="Enter other devices">
+            <span class="example-text">e.g. iPhone 17 Pro Max Blue, Apple Watch SE3 44mm Midnight</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="damaged">Are any devices Damaged?</label>
+            <div class="select-wrap">
+              <select class="ios-select" id="damaged">
+                <option value="" disabled selected>Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <span class="example-text">If Yes, make sure you have flagged to the Field Manager, and the Store Team is aware of this damage.</span>
+            <span class="error-text" data-error-for="damaged">Please select Yes or No.</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="accessoryImage">Upload images of devices</label>
+            <input class="ios-input" type="file" id="accessoryImage" accept="image/*" multiple>
+            <div id="accessoryPreview" class="images-preview"></div>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="damageImages">Upload images of damage</label>
+            <input class="ios-input" type="file" id="damageImages" accept="image/*" multiple>
+            <div id="damagePreview" class="images-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ios-section">
+        <div class="ios-section-title">Handover</div>
+        <div class="ios-card">
+          <div class="ios-row">
+            <label class="ios-label" for="returnDateTime">Date and Time of return</label>
+            <input class="ios-input" type="datetime-local" id="returnDateTime">
+            <span class="error-text" data-error-for="returnDateTime">Please set the return date and time.</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="storeMember">Store Team Member (who devices are being returned to)</label>
+            <input class="ios-input" type="text" id="storeMember">
+            <span class="error-text" data-error-for="storeMember">Please enter who received the devices.</span>
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="storePosition">Store Team Member Position</label>
+            <input class="ios-input" type="text" id="storePosition">
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label" for="storePhone">Store Team Member Phone Number</label>
+            <input class="ios-input" type="tel" id="storePhone" inputmode="tel" placeholder="Enter Phone Number">
+          </div>
+
+          <div class="ios-row">
+            <label class="ios-label">Store Team Member Signature</label>
+            <div class="signature-container">
+              <canvas id="signature-pad"></canvas>
+            </div>
+            <span class="error-text" data-error-for="signature-pad">Please capture the store team member's signature.</span>
+
+            <div class="btn-row">
+              <button type="button" class="btn btn-secondary" onclick="clearSignature()">Clear Signature</button>
+              <button type="button" class="btn btn-secondary" onclick="clearSavedEntry()">Clear Saved Entry</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="instructions">
+        After tapping "Export PDF", immediately send the file into the iMessage group chat "Device Handovers" to ensure the PDF is saved. Do this by using the Share Sheet at the bottom of page once the PDF loads.
+      </div>
+
+      <div id="exportStatus" class="status-banner"></div>
+      <button type="button" class="btn btn-primary" id="exportBtn" onclick="generatePDF()">Export PDF</button>
+    </form>
+
+  </div>
+
+  <script>
+  // ---------- header image crop (~15% shorter, centered) ----------
+  (function cropHeaderImage() {
+    const container = document.querySelector('.header-image');
+    const img = container ? container.querySelector('img') : null;
+    if (!img) return;
+    function applyCrop() {
+      const displayedHeight = img.getBoundingClientRect().height;
+      if (!displayedHeight) return;
+      const cropped = displayedHeight * 0.85; // ~15% shorter
+      const offset = (displayedHeight - cropped) / 2;
+      container.style.height = cropped + 'px';
+      img.style.marginTop = '-' + offset + 'px';
+    }
+    if (img.complete) {
+      applyCrop();
+    } else {
+      img.addEventListener('load', applyCrop);
+    }
+    window.addEventListener('resize', applyCrop);
+  })();
+
+  // ---------- devices list ----------
+  const devicesStatus = document.getElementById('devicesStatus');
+  function showBanner(el, message, type) {
+    el.textContent = message;
+    el.className = 'status-banner visible ' + type;
+  }
+  function hideBanner(el) {
+    el.className = 'status-banner';
+  }
+
+  // ---------- autosave draft (survives the app being closed/backgrounded on iOS) ----------
+  const DRAFT_KEY = 'deviceReturnForm.draft.v1';
+  const TEXT_FIELD_IDS = [
+    'storeId', 'storeName', 'storeLocation', 'teamMember', 'otherDevices',
+    'damaged', 'returnDateTime', 'storeMember', 'storePosition', 'storePhone'
+  ];
+  let draftRestoredBannerShown = false;
+  let saveDraftTimer = null;
+
+  function saveDraft() {
+    try {
+      const draft = { fields: {}, devices: [], signature: null };
+      TEXT_FIELD_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) draft.fields[id] = el.value;
+      });
+      draft.devices = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
+      if (typeof signaturePad !== 'undefined' && !signaturePad.isEmpty()) {
+        draft.signature = signaturePad.toDataURL();
+      }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {
+      console.warn('Could not save draft:', e);
+    }
+  }
+
+  function saveDraftDebounced() {
+    clearTimeout(saveDraftTimer);
+    saveDraftTimer = setTimeout(saveDraft, 300);
+  }
+
+  function restoreDraft() {
+    let draft;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      draft = JSON.parse(raw);
+    } catch (e) {
+      console.warn('Could not read saved draft:', e);
+      return;
+    }
+    if (!draft) return;
+
+    let restoredSomething = false;
+
+    if (draft.fields) {
+      TEXT_FIELD_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && draft.fields[id]) {
+          el.value = draft.fields[id];
+          restoredSomething = true;
+        }
+      });
+    }
+
+    if (draft.devices && draft.devices.length) {
+      document.querySelectorAll('#devicesReturned input[type=checkbox]').forEach(cb => {
+        if (draft.devices.includes(cb.value)) {
+          cb.checked = true;
+          restoredSomething = true;
+        }
+      });
+    }
+
+    if (draft.signature && typeof signaturePad !== 'undefined') {
+      try {
+        signaturePad.fromDataURL(draft.signature);
+        restoredSomething = true;
+      } catch (e) {
+        console.warn('Could not restore signature:', e);
+      }
+    }
+
+    if (restoredSomething && !draftRestoredBannerShown) {
+      draftRestoredBannerShown = true;
+      showBanner(devicesStatus, 'Restored your unsaved entry from before the app closed. Tap "Clear Saved Entry" below to start fresh instead.', 'info');
+    }
+  }
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+  }
+
+  function wireAutosave() {
+    TEXT_FIELD_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', saveDraftDebounced);
+      el.addEventListener('change', saveDraft);
+    });
+    document.getElementById('devicesReturned').addEventListener('change', saveDraft);
+    document.addEventListener('pointerup', saveDraftDebounced); // catches signature strokes ending anywhere
+  }
+  wireAutosave();
+
+  function clearSavedEntry() {
+    clearDraft();
+    document.getElementById('returnForm').reset();
+    document.querySelectorAll('#devicesReturned input[type=checkbox]').forEach(cb => cb.checked = false);
+    signaturePad.clear();
+    document.getElementById('accessoryPreview').innerHTML = '';
+    document.getElementById('damagePreview').innerHTML = '';
+    clearFieldErrors();
+    hideBanner(devicesStatus);
+    hideBanner(document.getElementById('exportStatus'));
+  }
+
+  fetch("devices.txt")
+    .then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    })
+    .then(text => {
+      const deviceList = text.split("\n").map(s => s.trim()).filter(Boolean);
+      const container = document.getElementById("devicesReturned");
+      container.innerHTML = "";
+      if (deviceList.length === 0) {
+        showBanner(devicesStatus, "Device list loaded but is empty — you can still use \"Other Devices\" below.", "info");
+        return;
+      }
+      deviceList.forEach((device, i) => {
+        const row = document.createElement("div");
+        row.className = "device-item";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.id = "device-" + i;
+        cb.value = device;
+        const label = document.createElement("label");
+        label.htmlFor = cb.id;
+        label.textContent = device;
+        row.appendChild(cb);
+        row.appendChild(label);
+        container.appendChild(row);
+      });
+      restoreDraft(); // devices list now exists, safe to restore checkbox state
+    })
+    .catch(err => {
+      showBanner(devicesStatus, "Couldn't load the device checklist (" + err.message + "). You can still list devices under \"Other Devices\" below.", "error");
+      restoreDraft(); // still restore the other fields even if the checklist failed to load
+    });
+
+  // ---------- signature ----------
+  const canvas = document.getElementById('signature-pad');
+  const signaturePad = new SignaturePad(canvas);
+
+  function resizeCanvas() {
+    // preserve existing strokes across a resize
+    const data = signaturePad.toData();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext('2d').scale(ratio, ratio);
+    signaturePad.clear();
+    if (data && data.length) signaturePad.fromData(data);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function clearSignature() { signaturePad.clear(); saveDraftDebounced(); }
+
+  // ---------- image previews ----------
+  function previewImages(input, previewContainer) {
+    const container = document.getElementById(previewContainer);
+    container.innerHTML = '';
+    Array.from(input.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        container.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  document.getElementById('accessoryImage').addEventListener('change', e => previewImages(e.target, 'accessoryPreview'));
+  document.getElementById('damageImages').addEventListener('change', e => previewImages(e.target, 'damagePreview'));
+
+  // ---------- helper: compress image ----------
+  function fileToDataURL(file){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxWidth = 1000;
+          const scale = Math.min(maxWidth / img.width, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve({ data: canvas.toDataURL('image/jpeg', 0.7), width: canvas.width, height: canvas.height });
+        };
+        img.onerror = () => reject(new Error("Could not read image file: " + file.name));
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function urlToFile(url){
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new File([blob], "header.png", { type: blob.type });
+  }
+
+  // ---------- validation ----------
+  function clearFieldErrors() {
+    document.querySelectorAll('.error-text').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+  }
+
+  function flagError(fieldId) {
+    const errEl = document.querySelector(`.error-text[data-error-for="${fieldId}"]`);
+    if (errEl) errEl.classList.add('visible');
+    const fieldEl = document.getElementById(fieldId);
+    if (fieldEl) fieldEl.classList.add('field-error');
+  }
+
+  function validateForm() {
+    clearFieldErrors();
+    let firstInvalid = null;
+    const fail = (fieldId) => {
+      flagError(fieldId);
+      if (!firstInvalid) firstInvalid = document.getElementById(fieldId);
+    };
+
+    const storeId = document.getElementById('storeId').value.trim();
+    if (!storeId) fail('storeId');
+
+    const storeName = document.getElementById('storeName').value;
+    if (!storeName) fail('storeName');
+
+    const storeLocation = document.getElementById('storeLocation').value.trim();
+    if (!storeLocation) fail('storeLocation');
+
+    const teamMember = document.getElementById('teamMember').value;
+    if (!teamMember) fail('teamMember');
+
+    const devicesChecked = document.querySelectorAll('#devicesReturned input[type=checkbox]:checked').length;
+    const otherDevices = document.getElementById('otherDevices').value.trim();
+    if (devicesChecked === 0 && !otherDevices) fail('devicesReturned');
+
+    const damaged = document.getElementById('damaged').value;
+    if (!damaged) fail('damaged');
+
+    const returnDateTime = document.getElementById('returnDateTime').value;
+    if (!returnDateTime) fail('returnDateTime');
+
+    const storeMember = document.getElementById('storeMember').value.trim();
+    if (!storeMember) fail('storeMember');
+
+    if (signaturePad.isEmpty()) fail('signature-pad');
+
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return firstInvalid === null;
+  }
+
+  // ---------- PDF image section (fixed: no trailing blank page) ----------
+  // load a File into an <img> element
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Could not read image file: " + file.name));
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // render an image "cover"-cropped into a cellW x cellH box with rounded corners,
+  // returned as a transparent PNG so the corners show the page background through them
+  function roundedThumbnailDataURL(img, cellW, cellH, radius) {
+    const renderScale = 2; // render at 2x for crisper thumbnails in the PDF
+    const w = Math.round(cellW * renderScale);
+    const h = Math.round(cellH * renderScale);
+    const r = radius * renderScale;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.arcTo(w, 0, w, h, r);
+    ctx.arcTo(w, h, 0, h, r);
+    ctx.arcTo(0, h, 0, 0, r);
+    ctx.arcTo(0, 0, w, 0, r);
+    ctx.closePath();
+    ctx.clip();
+
+    const srcRatio = img.width / img.height;
+    const dstRatio = w / h;
+    let sx, sy, sw, sh;
+    if (srcRatio > dstRatio) {
+      sh = img.height;
+      sw = sh * dstRatio;
+      sx = (img.width - sw) / 2;
+      sy = 0;
+    } else {
+      sw = img.width;
+      sh = sw / dstRatio;
+      sx = 0;
+      sy = (img.height - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+    return canvas.toDataURL('image/png');
+  }
+
+  // lays images out in a 3-column x 4-row grid (12 per page) with rounded corners.
+  // Returns the y position to continue from — always a fresh page after the grid, if any images were added.
+  async function addImagesToPDF(files, pdf, title, pageWidth, yStart) {
+    if (!files || files.length === 0) return yStart;
+
+    const margin = 40;
+    const cols = 3, rows = 4, gutter = 12;
+    const perPage = cols * rows;
+    const radius = 10;
+    const cellW = (pageWidth - margin * 2 - gutter * (cols - 1)) / cols;
+    const cellH = cellW;
+
+    const fileList = Array.from(files);
+    let gridTop = 0;
+
+    for (let i = 0; i < fileList.length; i++) {
+      const posInPage = i % perPage;
+      if (posInPage === 0) {
+        pdf.addPage();
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, "bold");
+        pdf.text(title, margin, margin);
+        pdf.setFont(undefined, "normal");
+        gridTop = margin + 24;
+      }
+
+      const col = posInPage % cols;
+      const row = Math.floor(posInPage / cols);
+      const x = margin + col * (cellW + gutter);
+      const y = gridTop + row * (cellH + gutter);
+
+      const img = await loadImage(fileList[i]);
+      const thumb = roundedThumbnailDataURL(img, cellW, cellH, radius);
+      pdf.addImage(thumb, 'PNG', x, y, cellW, cellH);
+    }
+
+    // start a fresh page for whatever content follows the grid
+    pdf.addPage();
+    return margin;
+  }
+
+  // ---------- main export ----------
+  async function generatePDF() {
+    if (!validateForm()) {
+      showBanner(document.getElementById('exportStatus'), "Please fix the highlighted fields before exporting.", "error");
+      return;
+    }
+    hideBanner(document.getElementById('exportStatus'));
+
+    const exportBtn = document.getElementById('exportBtn');
+    const originalLabel = exportBtn.textContent;
+    exportBtn.disabled = true;
+    exportBtn.textContent = "Generating PDF…";
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let y = 40;
+      const lineHeight = 22;
+
+      function checkPageBreak(space = 60) {
+        if (y + space > pageHeight - 40) {
+          pdf.addPage();
+          y = 40;
+        }
+      }
+
+      function addField(label, value) {
+        checkPageBreak(50);
+        pdf.setFontSize(12);
+        pdf.setFillColor(240, 240, 240);
+        pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
+        y += lineHeight * 2;
+      }
+
+      function addHeading(title) {
+        y += 10; // space above headings
+        checkPageBreak(40);
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, "bold");
+        pdf.text(title, 40, y);
+        pdf.setFont(undefined, "normal");
+        y += lineHeight;
+      }
+
+      // header image
+      const headerImg = document.querySelector(".header-image img");
+      if (headerImg) {
+        try {
+          const imgData = await fileToDataURL(await urlToFile(headerImg.src));
+          const ratio = imgData.width / imgData.height;
+          const w = pageWidth - 80;
+          const h = w / ratio;
+          pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
+          y += h + 20;
+        } catch (e) {
+          console.warn("Header image could not be added to PDF:", e);
+        }
+      }
+
+      addHeading("Store Details");
+      addField("Store ID", document.getElementById('storeId').value);
+      addField("Retailer", document.getElementById('storeName').value);
+      addField("Store Location", document.getElementById('storeLocation').value);
+      addField("Team Member Name", document.getElementById('teamMember').value);
+
+      addHeading("Devices Returned");
+      const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
+      devicesChecked.forEach(device => addField("Device", device));
+      addField("Other Devices", document.getElementById('otherDevices').value);
+
+      addHeading("Damage Information");
+      addField("Any Devices Damaged", document.getElementById('damaged').value);
+
+      y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
+      y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
+
+      addHeading("Store Team Member Details");
+      addField("Returned To", document.getElementById('storeMember').value);
+      addField("Position", document.getElementById('storePosition').value);
+      addField("Phone", document.getElementById('storePhone').value);
+
+      addHeading("Store Team Member's Signature");
+      if (!signaturePad.isEmpty()) {
+        checkPageBreak(120);
+        const sigData = signaturePad.toDataURL();
+        pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
+        y += 80;
+      }
+
+      // format date & time under signature
+      const dateTime = document.getElementById('returnDateTime').value;
+      if (dateTime) {
+        const formatted = new Date(dateTime).toLocaleString("en-NZ", {
+          dateStyle: "short",
+          timeStyle: "short"
+        });
+        addField("Date & Time of Return", formatted);
+      }
+
+      const storeId = document.getElementById('storeId').value || 'device-return';
+      pdf.save(`${storeId}-Device-Handover.pdf`);
+      clearDraft();
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      showBanner(document.getElementById('exportStatus'), "Something went wrong generating the PDF: " + err.message, "error");
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = originalLabel;
+    }
+  }
+  </script>
+</body>
+</html>
 </head>
 <body>
   <h1>Device Return Form</h1>
