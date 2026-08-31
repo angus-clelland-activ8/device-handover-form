@@ -522,6 +522,10 @@
   let saveDraftTimer = null;
 
   function saveDraft() {
+    if (draftRestoredBanner.classList.contains('visible')) {
+      draftRestoredBanner.classList.remove('visible');
+      draftRestoredBannerShown = false;
+    }
     try {
       const draft = { fields: {}, devices: [], signature: null };
       TEXT_FIELD_IDS.forEach(id => {
@@ -1020,6 +1024,8 @@
       const storeId = document.getElementById('storeId').value || 'device-return';
       pdf.save(`${storeId}-Device-Handover.pdf`);
       clearDraft();
+      draftRestoredBanner.classList.remove('visible');
+      draftRestoredBannerShown = false;
     } catch (err) {
       console.error("PDF generation failed:", err);
       showBanner(document.getElementById('exportStatus'), "Something went wrong generating the PDF: " + err.message, "error");
