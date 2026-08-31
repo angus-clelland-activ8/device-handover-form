@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-    const password = "Activ8";
-    let userPass = prompt("Enter password to access the Device Return Form:");
-    if (userPass !== password) {
-      alert("Incorrect password. Access denied.");
-      window.location = "https://www.apple.com/nz";
-    }
-  </script>
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Activ8 Device Return Form</title>
@@ -284,6 +275,34 @@
       line-height: 1.4;
     }
 
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--ios-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.25s ease;
+    }
+    .loading-spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid #D1D1D6;
+      border-top-color: var(--ios-blue);
+      border-radius: 50%;
+      animation: loading-spin 0.8s linear infinite;
+    }
+    @keyframes loading-spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--ios-label-gray);
+    }
+
     @media (max-width: 480px) {
       .device-item { font-size: 14px; }
     }
@@ -296,6 +315,26 @@
 
 </head>
 <body>
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading Device Return Form…</div>
+  </div>
+
+  <script>
+    // Defer the password prompt until after the loading screen has painted,
+    // so there's a visible spinner instead of a blank white page while it appears.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const password = "Activ8";
+        const userPass = prompt("Enter password to access the Device Return Form:");
+        if (userPass !== password) {
+          alert("Incorrect password. Access denied.");
+          window.location = "https://www.apple.com/nz";
+        }
+      });
+    });
+  </script>
+
   <h1>Device Return Form</h1>
 
   <div class="page-wrap">
@@ -943,13 +982,13 @@
       const IOS_LABEL_GRAY = [110, 110, 115];
       const IOS_TEXT = [28, 28, 30];
       const IOS_BORDER = [229, 229, 234];
-      const CARD_PAD = 12;
       const ROW_LABEL_SIZE = 8;
       const ROW_VALUE_SIZE = 10.5;
       const ROW_LINE_HEIGHT = 12;
-      const ROW_TOP_PAD = 18; // breathing room between the divider above and this row's label
+      const ROW_TOP_PAD = 18;    // gap from a divider down to the next row's label
+      const ROW_BOTTOM_PAD = 10; // gap from a row's last line down to the divider below it
+      const CARD_PAD = (ROW_TOP_PAD + ROW_BOTTOM_PAD) / 2; // ~half the inter-row gap, used only at the card's outer top/bottom edges
       const CARD_RADIUS = 10;
-      const SIGNATURE_BLOCK_HEIGHT = ROW_TOP_PAD + 61; // label + gap + image, scaled with ROW_TOP_PAD
 
       function checkPageBreak(space = 60) {
         if (y + space > pageHeight - 40) {
@@ -969,21 +1008,32 @@
           } else {
             lines = pdf.splitTextToSize(String(row.value || '—'), contentWidth);
           }
-          return { label: row.label, lines, height: ROW_TOP_PAD + lines.length * ROW_LINE_HEIGHT + 10 };
+          return { label: row.label, lines };
         });
       }
 
       // Draws an iOS-style rounded card with a gray uppercase title above it.
+      // The first row's top space and the last row's bottom space use CARD_PAD alone
+      // (roughly half the ROW_TOP_PAD + ROW_BOTTOM_PAD gap seen between rows), so the
+      // card's outer edges don't look more padded than the dividers between rows.
       // Auto-paginates if the card wouldn't fit on the remaining page space.
       // Returns the y-coordinate of the card's bottom edge.
       function drawCard(x, yTop, width, title, rows, opts) {
         opts = opts || {};
         const contentWidth = width - CARD_PAD * 2;
         const measured = measureCardRows(rows, contentWidth);
-        let contentHeight = CARD_PAD;
-        measured.forEach(r => { contentHeight += r.height; });
-        if (opts.signatureDataUrl) contentHeight += SIGNATURE_BLOCK_HEIGHT;
-        contentHeight += CARD_PAD;
+        const lastIdx = measured.length - 1;
+        const hasSig = !!opts.signatureDataUrl;
+
+        let contentHeight = 0;
+        measured.forEach((r, idx) => {
+          const topPad = idx === 0 ? CARD_PAD : ROW_TOP_PAD;
+          const bottomPad = (idx === lastIdx && !hasSig) ? CARD_PAD : ROW_BOTTOM_PAD;
+          contentHeight += topPad + r.lines.length * ROW_LINE_HEIGHT + bottomPad;
+        });
+        if (hasSig) {
+          contentHeight += ROW_TOP_PAD + 6 + 46 + CARD_PAD; // gap + label + gap + image + bottom pad
+        }
 
         if (yTop + 8 + contentHeight > pageHeight - 40) {
           pdf.addPage();
@@ -1002,33 +1052,38 @@
         pdf.setLineWidth(0.75);
         pdf.roundedRect(x, cardY, width, contentHeight, CARD_RADIUS, CARD_RADIUS, 'FD');
 
-        let cy = cardY + CARD_PAD;
+        let cy = cardY;
         measured.forEach((r, idx) => {
-          const rowTop = cy;
+          const topPad = idx === 0 ? CARD_PAD : ROW_TOP_PAD;
+          const bottomPad = (idx === lastIdx && !hasSig) ? CARD_PAD : ROW_BOTTOM_PAD;
+
+          const labelY = cy + topPad;
           pdf.setFontSize(ROW_LABEL_SIZE);
           pdf.setTextColor(...IOS_LABEL_GRAY);
-          pdf.text(r.label.toUpperCase(), x + CARD_PAD, rowTop + ROW_TOP_PAD);
+          pdf.text(r.label.toUpperCase(), x + CARD_PAD, labelY);
           pdf.setFontSize(ROW_VALUE_SIZE);
           pdf.setTextColor(...IOS_TEXT);
-          let ly = rowTop + ROW_TOP_PAD + 12;
+          let ly = labelY + 12;
           r.lines.forEach(line => {
             pdf.text(line, x + CARD_PAD, ly);
             ly += ROW_LINE_HEIGHT;
           });
-          cy = rowTop + r.height;
-          if (idx < measured.length - 1 || opts.signatureDataUrl) {
+
+          cy = cy + topPad + r.lines.length * ROW_LINE_HEIGHT + bottomPad;
+          if (idx < lastIdx || hasSig) {
             pdf.setDrawColor(...IOS_BORDER);
             pdf.setLineWidth(0.5);
             pdf.line(x + CARD_PAD, cy, x + width - CARD_PAD, cy);
           }
         });
 
-        if (opts.signatureDataUrl) {
+        if (hasSig) {
+          const sigLabelY = cy + ROW_TOP_PAD;
           pdf.setFontSize(ROW_LABEL_SIZE);
           pdf.setTextColor(...IOS_LABEL_GRAY);
-          pdf.text('SIGNATURE', x + CARD_PAD, cy + ROW_TOP_PAD + 9);
+          pdf.text('SIGNATURE', x + CARD_PAD, sigLabelY);
           const sigW = Math.min(160, contentWidth);
-          pdf.addImage(opts.signatureDataUrl, 'PNG', x + CARD_PAD, cy + ROW_TOP_PAD + 15, sigW, 46);
+          pdf.addImage(opts.signatureDataUrl, 'PNG', x + CARD_PAD, sigLabelY + 6, sigW, 46);
         }
 
         return cardY + contentHeight;
@@ -1108,6 +1163,15 @@
       exportBtn.textContent = originalLabel;
     }
   }
+  // ---------- hide the loading overlay once the app is ready ----------
+  function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.remove(), 250);
+  }
+  window.addEventListener('load', hideLoadingOverlay);
+  setTimeout(hideLoadingOverlay, 4000); // fallback in case something hangs
   </script>
 </body>
 </html>
