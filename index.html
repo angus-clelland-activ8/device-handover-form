@@ -939,6 +939,16 @@
       let y = 40;
       const lineHeight = 22;
 
+      const IOS_LABEL_GRAY = [110, 110, 115];
+      const IOS_TEXT = [28, 28, 30];
+      const IOS_BORDER = [229, 229, 234];
+      const CARD_PAD = 12;
+      const ROW_LABEL_SIZE = 8;
+      const ROW_VALUE_SIZE = 10.5;
+      const ROW_LINE_HEIGHT = 12;
+      const CARD_RADIUS = 10;
+      const SIGNATURE_BLOCK_HEIGHT = 68; // label + gap + image
+
       function checkPageBreak(space = 60) {
         if (y + space > pageHeight - 40) {
           pdf.addPage();
@@ -946,80 +956,135 @@
         }
       }
 
-      function addField(label, value) {
-        checkPageBreak(50);
-        pdf.setFontSize(12);
-        pdf.setFillColor(240, 240, 240);
-        pdf.roundedRect(40, y, pageWidth - 80, lineHeight * 1.5, 6, 6, 'F');
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`${label}: ${value || ""}`, 50, y + lineHeight);
-        y += lineHeight * 2;
+      function measureCardRows(rows, contentWidth) {
+        return rows.map(row => {
+          pdf.setFontSize(ROW_VALUE_SIZE);
+          const lines = pdf.splitTextToSize(String(row.value || '—'), contentWidth);
+          return { label: row.label, lines, height: 7 + lines.length * ROW_LINE_HEIGHT + 10 };
+        });
       }
 
-      function addHeading(title) {
-        y += 10; // space above headings
-        checkPageBreak(40);
-        pdf.setFontSize(14);
+      // Draws an iOS-style rounded card with a gray uppercase title above it.
+      // Auto-paginates if the card wouldn't fit on the remaining page space.
+      // Returns the y-coordinate of the card's bottom edge.
+      function drawCard(x, yTop, width, title, rows, opts) {
+        opts = opts || {};
+        const contentWidth = width - CARD_PAD * 2;
+        const measured = measureCardRows(rows, contentWidth);
+        let contentHeight = CARD_PAD;
+        measured.forEach(r => { contentHeight += r.height; });
+        if (opts.signatureDataUrl) contentHeight += SIGNATURE_BLOCK_HEIGHT;
+        contentHeight += CARD_PAD;
+
+        if (yTop + 8 + contentHeight > pageHeight - 40) {
+          pdf.addPage();
+          yTop = 40;
+        }
+
+        pdf.setFontSize(ROW_LABEL_SIZE);
         pdf.setFont(undefined, "bold");
-        pdf.text(title, 40, y);
+        pdf.setTextColor(...IOS_LABEL_GRAY);
+        pdf.text(title.toUpperCase(), x, yTop);
         pdf.setFont(undefined, "normal");
-        y += lineHeight;
+
+        const cardY = yTop + 8;
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(...IOS_BORDER);
+        pdf.setLineWidth(0.75);
+        pdf.roundedRect(x, cardY, width, contentHeight, CARD_RADIUS, CARD_RADIUS, 'FD');
+
+        let cy = cardY + CARD_PAD;
+        measured.forEach((r, idx) => {
+          const rowTop = cy;
+          pdf.setFontSize(ROW_LABEL_SIZE);
+          pdf.setTextColor(...IOS_LABEL_GRAY);
+          pdf.text(r.label.toUpperCase(), x + CARD_PAD, rowTop + 7);
+          pdf.setFontSize(ROW_VALUE_SIZE);
+          pdf.setTextColor(...IOS_TEXT);
+          let ly = rowTop + 7 + 12;
+          r.lines.forEach(line => {
+            pdf.text(line, x + CARD_PAD, ly);
+            ly += ROW_LINE_HEIGHT;
+          });
+          cy = rowTop + r.height;
+          if (idx < measured.length - 1 || opts.signatureDataUrl) {
+            pdf.setDrawColor(...IOS_BORDER);
+            pdf.setLineWidth(0.5);
+            pdf.line(x + CARD_PAD, cy, x + width - CARD_PAD, cy);
+          }
+        });
+
+        if (opts.signatureDataUrl) {
+          pdf.setFontSize(ROW_LABEL_SIZE);
+          pdf.setTextColor(...IOS_LABEL_GRAY);
+          pdf.text('SIGNATURE', x + CARD_PAD, cy + 16);
+          const sigW = Math.min(160, contentWidth);
+          pdf.addImage(opts.signatureDataUrl, 'PNG', x + CARD_PAD, cy + 22, sigW, 46);
+        }
+
+        return cardY + contentHeight;
       }
 
-      // header image
-      const headerImg = document.querySelector(".header-image img");
-      if (headerImg) {
+      // header image — cropped ~15% shorter and rounded, matching the site
+      const headerImgEl = document.querySelector(".header-image img");
+      if (headerImgEl) {
         try {
-          const imgData = await fileToDataURL(await urlToFile(headerImg.src));
-          const ratio = imgData.width / imgData.height;
-          const w = pageWidth - 80;
-          const h = w / ratio;
-          pdf.addImage(imgData.data, 'PNG', 40, y, w, h);
-          y += h + 20;
+          const headerFile = await urlToFile(headerImgEl.src);
+          const headerImgObj = await loadImage(headerFile);
+          const headerW = 220;
+          const naturalH = headerW / (headerImgObj.width / headerImgObj.height);
+          const headerH = naturalH * 0.85; // ~15% shorter
+          const headerX = 40 + (pageWidth - 80 - headerW) / 2;
+          const headerThumb = roundedThumbnailDataURL(headerImgObj, headerW, headerH, 14);
+          pdf.addImage(headerThumb, 'PNG', headerX, y, headerW, headerH);
+          y += headerH + 20;
         } catch (e) {
           console.warn("Header image could not be added to PDF:", e);
         }
       }
 
-      addHeading("Store Details");
-      addField("Store ID", document.getElementById('storeId').value);
-      addField("Retailer", document.getElementById('storeName').value);
-      addField("Store Location", document.getElementById('storeLocation').value);
-      addField("Team Member Name", document.getElementById('teamMember').value);
+      // Store Details + Store Team Member/Signature, side by side
+      const usableWidth = pageWidth - 80;
+      const colGap = 16;
+      const colWidth = (usableWidth - colGap) / 2;
+      const leftX = 40;
+      const rightX = 40 + colWidth + colGap;
+      const cardsY = y;
 
-      addHeading("Devices Returned");
+      const dateTimeVal = document.getElementById('returnDateTime').value;
+      const formattedDateTime = dateTimeVal
+        ? new Date(dateTimeVal).toLocaleString("en-NZ", { dateStyle: "short", timeStyle: "short" })
+        : '';
+
+      const leftBottom = drawCard(leftX, cardsY, colWidth, "Store Details", [
+        { label: "Store ID", value: document.getElementById('storeId').value },
+        { label: "Retailer", value: document.getElementById('storeName').value },
+        { label: "Location", value: document.getElementById('storeLocation').value },
+        { label: "Team Member", value: document.getElementById('teamMember').value },
+        { label: "Date & Time", value: formattedDateTime }
+      ]);
+
+      const rightBottom = drawCard(rightX, cardsY, colWidth, "Store Team Member", [
+        { label: "Returned To", value: document.getElementById('storeMember').value },
+        { label: "Position", value: document.getElementById('storePosition').value },
+        { label: "Phone", value: document.getElementById('storePhone').value }
+      ], {
+        signatureDataUrl: signaturePad.isEmpty() ? null : signaturePad.toDataURL()
+      });
+
+      y = Math.max(leftBottom, rightBottom) + 20;
+
+      // Devices Returned, full width
       const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
-      devicesChecked.forEach(device => addField("Device", device));
-      addField("Other Devices", document.getElementById('otherDevices').value);
-
-      addHeading("Damage Information");
-      addField("Any Devices Damaged", document.getElementById('damaged').value);
+      const devicesBottom = drawCard(40, y, usableWidth, "Devices Returned", [
+        { label: "Devices", value: devicesChecked.length ? devicesChecked.join(", ") : "—" },
+        { label: "Other Devices", value: document.getElementById('otherDevices').value },
+        { label: "Damaged", value: document.getElementById('damaged').value }
+      ]);
+      y = devicesBottom + 20;
 
       y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
       y = await addImagesToPDF(document.getElementById('damageImages').files, pdf, "Damage Images", pageWidth, y);
-
-      addHeading("Store Team Member Details");
-      addField("Returned To", document.getElementById('storeMember').value);
-      addField("Position", document.getElementById('storePosition').value);
-      addField("Phone", document.getElementById('storePhone').value);
-
-      addHeading("Store Team Member's Signature");
-      if (!signaturePad.isEmpty()) {
-        checkPageBreak(120);
-        const sigData = signaturePad.toDataURL();
-        pdf.addImage(sigData, 'PNG', 40, y, 200, 60);
-        y += 80;
-      }
-
-      // format date & time under signature
-      const dateTime = document.getElementById('returnDateTime').value;
-      if (dateTime) {
-        const formatted = new Date(dateTime).toLocaleString("en-NZ", {
-          dateStyle: "short",
-          timeStyle: "short"
-        });
-        addField("Date & Time of Return", formatted);
-      }
 
       const storeId = document.getElementById('storeId').value || 'device-return';
       pdf.save(`${storeId}-Device-Handover.pdf`);
