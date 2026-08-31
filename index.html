@@ -321,6 +321,11 @@
   </div>
 
   <script>
+    // Tracks whether the password has actually been verified — the overlay below
+    // must never hide itself (via the 'load' event or its timeout fallback) unless
+    // this is true, or the form would be revealed underneath before any redirect completes.
+    let passwordVerified = false;
+
     // Defer the password prompt until after the loading screen has painted,
     // so there's a visible spinner instead of a blank white page while it appears.
     requestAnimationFrame(() => {
@@ -330,6 +335,9 @@
         if (userPass !== password) {
           alert("Incorrect password. Access denied.");
           window.location = "https://www.apple.com/nz";
+        } else {
+          passwordVerified = true;
+          if (typeof hideLoadingOverlay === 'function') hideLoadingOverlay();
         }
       });
     });
