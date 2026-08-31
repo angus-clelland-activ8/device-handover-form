@@ -946,8 +946,9 @@
       const ROW_LABEL_SIZE = 8;
       const ROW_VALUE_SIZE = 10.5;
       const ROW_LINE_HEIGHT = 12;
+      const ROW_TOP_PAD = 12; // breathing room between the divider above and this row's label
       const CARD_RADIUS = 10;
-      const SIGNATURE_BLOCK_HEIGHT = 68; // label + gap + image
+      const SIGNATURE_BLOCK_HEIGHT = 73; // label + gap + image
 
       function checkPageBreak(space = 60) {
         if (y + space > pageHeight - 40) {
@@ -959,8 +960,15 @@
       function measureCardRows(rows, contentWidth) {
         return rows.map(row => {
           pdf.setFontSize(ROW_VALUE_SIZE);
-          const lines = pdf.splitTextToSize(String(row.value || '—'), contentWidth);
-          return { label: row.label, lines, height: 7 + lines.length * ROW_LINE_HEIGHT + 10 };
+          let lines;
+          if (Array.isArray(row.value)) {
+            lines = row.value.length
+              ? row.value.flatMap(item => pdf.splitTextToSize(String(item), contentWidth))
+              : ['—'];
+          } else {
+            lines = pdf.splitTextToSize(String(row.value || '—'), contentWidth);
+          }
+          return { label: row.label, lines, height: ROW_TOP_PAD + lines.length * ROW_LINE_HEIGHT + 10 };
         });
       }
 
@@ -998,10 +1006,10 @@
           const rowTop = cy;
           pdf.setFontSize(ROW_LABEL_SIZE);
           pdf.setTextColor(...IOS_LABEL_GRAY);
-          pdf.text(r.label.toUpperCase(), x + CARD_PAD, rowTop + 7);
+          pdf.text(r.label.toUpperCase(), x + CARD_PAD, rowTop + ROW_TOP_PAD);
           pdf.setFontSize(ROW_VALUE_SIZE);
           pdf.setTextColor(...IOS_TEXT);
-          let ly = rowTop + 7 + 12;
+          let ly = rowTop + ROW_TOP_PAD + 12;
           r.lines.forEach(line => {
             pdf.text(line, x + CARD_PAD, ly);
             ly += ROW_LINE_HEIGHT;
@@ -1017,9 +1025,9 @@
         if (opts.signatureDataUrl) {
           pdf.setFontSize(ROW_LABEL_SIZE);
           pdf.setTextColor(...IOS_LABEL_GRAY);
-          pdf.text('SIGNATURE', x + CARD_PAD, cy + 16);
+          pdf.text('SIGNATURE', x + CARD_PAD, cy + ROW_TOP_PAD + 9);
           const sigW = Math.min(160, contentWidth);
-          pdf.addImage(opts.signatureDataUrl, 'PNG', x + CARD_PAD, cy + 22, sigW, 46);
+          pdf.addImage(opts.signatureDataUrl, 'PNG', x + CARD_PAD, cy + ROW_TOP_PAD + 15, sigW, 46);
         }
 
         return cardY + contentHeight;
@@ -1077,7 +1085,7 @@
       // Devices Returned, full width
       const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
       const devicesBottom = drawCard(40, y, usableWidth, "Devices Returned", [
-        { label: "Devices", value: devicesChecked.length ? devicesChecked.join(", ") : "—" },
+        { label: "Devices", value: devicesChecked },
         { label: "Other Devices", value: document.getElementById('otherDevices').value },
         { label: "Damaged", value: document.getElementById('damaged').value }
       ]);
