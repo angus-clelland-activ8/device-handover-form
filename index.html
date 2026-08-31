@@ -196,7 +196,58 @@
       border: 1px solid var(--ios-border);
     }
 
+    .segmented-control {
+      display: flex;
+      background: var(--ios-secondary-btn-bg);
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .segment-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px 0;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--ios-text);
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .segment-btn.active {
+      background: #fff;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .segmented-control.field-error {
+      outline: 1.5px solid var(--ios-red);
+      outline-offset: 2px;
+    }
+
+    .required-tag {
+      color: var(--ios-red);
+      font-weight: 600;
+      display: none;
+    }
+    .required-tag.visible { display: inline; }
+
     .btn-row { display: flex; gap: 10px; margin-top: 16px; padding: 0 2px; }
+
+    .draft-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .btn-clear-inline {
+      background: none;
+      border: none;
+      color: var(--ios-blue);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 0;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .btn-clear-inline:active { opacity: 0.6; }
     .btn {
       border: none;
       border-radius: 12px;
@@ -254,6 +305,10 @@
     </div>
 
     <div id="devicesStatus" class="status-banner"></div>
+    <div id="draftRestoredBanner" class="status-banner info draft-banner">
+      <span id="draftRestoredText">Restored your unsaved entry from before the app closed.</span>
+      <button type="button" class="btn-clear-inline" onclick="clearSavedEntry()">Clear Saved Entry</button>
+    </div>
 
     <form id="returnForm">
 
@@ -350,14 +405,12 @@
           </div>
 
           <div class="ios-row">
-            <label class="ios-label" for="damaged">Are any devices Damaged?</label>
-            <div class="select-wrap">
-              <select class="ios-select" id="damaged">
-                <option value="" disabled selected>Select...</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
+            <label class="ios-label">Are any devices Damaged?</label>
+            <div class="segmented-control" id="damagedSegment">
+              <button type="button" class="segment-btn" data-value="Yes">Yes</button>
+              <button type="button" class="segment-btn" data-value="No">No</button>
             </div>
+            <input type="hidden" id="damaged" value="">
             <span class="example-text">If Yes, make sure you have flagged to the Field Manager, and the Store Team is aware of this damage.</span>
             <span class="error-text" data-error-for="damaged">Please select Yes or No.</span>
           </div>
@@ -369,9 +422,10 @@
           </div>
 
           <div class="ios-row">
-            <label class="ios-label" for="damageImages">Upload images of damage</label>
+            <label class="ios-label" for="damageImages">Upload images of damage<span id="damageImagesRequiredTag" class="required-tag"> (required)</span></label>
             <input class="ios-input" type="file" id="damageImages" accept="image/*" multiple>
             <div id="damagePreview" class="images-preview"></div>
+            <span class="error-text" data-error-for="damageImages">Please attach at least one photo of the damage.</span>
           </div>
         </div>
       </div>
@@ -410,7 +464,6 @@
 
             <div class="btn-row">
               <button type="button" class="btn btn-secondary" onclick="clearSignature()">Clear Signature</button>
-              <button type="button" class="btn btn-secondary" onclick="clearSavedEntry()">Clear Saved Entry</button>
             </div>
           </div>
         </div>
@@ -450,6 +503,7 @@
 
   // ---------- devices list ----------
   const devicesStatus = document.getElementById('devicesStatus');
+  const draftRestoredBanner = document.getElementById('draftRestoredBanner');
   function showBanner(el, message, type) {
     el.textContent = message;
     el.className = 'status-banner visible ' + type;
@@ -511,6 +565,7 @@
           restoredSomething = true;
         }
       });
+      syncDamagedSegmentUI();
     }
 
     if (draft.devices && draft.devices.length) {
@@ -533,7 +588,7 @@
 
     if (restoredSomething && !draftRestoredBannerShown) {
       draftRestoredBannerShown = true;
-      showBanner(devicesStatus, 'Restored your unsaved entry from before the app closed. Tap "Clear Saved Entry" below to start fresh instead.', 'info');
+      draftRestoredBanner.classList.add('visible');
     }
   }
 
@@ -553,6 +608,36 @@
   }
   wireAutosave();
 
+  // ---------- damaged segmented control ----------
+  const damagedHiddenInput = document.getElementById('damaged');
+  const damagedSegment = document.getElementById('damagedSegment');
+
+  function syncDamagedSegmentUI() {
+    const val = damagedHiddenInput.value;
+    damagedSegment.querySelectorAll('.segment-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === val);
+    });
+    updateDamageImagesRequirement();
+  }
+
+  function setDamagedValue(val) {
+    damagedHiddenInput.value = val;
+    syncDamagedSegmentUI();
+    damagedSegment.classList.remove('field-error');
+    const errEl = document.querySelector('.error-text[data-error-for="damaged"]');
+    if (errEl) errEl.classList.remove('visible');
+    saveDraftDebounced();
+  }
+
+  damagedSegment.querySelectorAll('.segment-btn').forEach(btn => {
+    btn.addEventListener('click', () => setDamagedValue(btn.dataset.value));
+  });
+
+  function updateDamageImagesRequirement() {
+    const tag = document.getElementById('damageImagesRequiredTag');
+    if (tag) tag.classList.toggle('visible', damagedHiddenInput.value === 'Yes');
+  }
+
   function clearSavedEntry() {
     clearDraft();
     document.getElementById('returnForm').reset();
@@ -563,6 +648,9 @@
     clearFieldErrors();
     hideBanner(devicesStatus);
     hideBanner(document.getElementById('exportStatus'));
+    draftRestoredBanner.classList.remove('visible');
+    draftRestoredBannerShown = false;
+    syncDamagedSegmentUI();
   }
 
   fetch("devices.txt")
@@ -674,6 +762,11 @@
   function flagError(fieldId) {
     const errEl = document.querySelector(`.error-text[data-error-for="${fieldId}"]`);
     if (errEl) errEl.classList.add('visible');
+    if (fieldId === 'damaged') {
+      const segment = document.getElementById('damagedSegment');
+      if (segment) segment.classList.add('field-error');
+      return;
+    }
     const fieldEl = document.getElementById(fieldId);
     if (fieldEl) fieldEl.classList.add('field-error');
   }
@@ -683,7 +776,9 @@
     let firstInvalid = null;
     const fail = (fieldId) => {
       flagError(fieldId);
-      if (!firstInvalid) firstInvalid = document.getElementById(fieldId);
+      if (!firstInvalid) {
+        firstInvalid = fieldId === 'damaged' ? document.getElementById('damagedSegment') : document.getElementById(fieldId);
+      }
     };
 
     const storeId = document.getElementById('storeId').value.trim();
@@ -704,6 +799,9 @@
 
     const damaged = document.getElementById('damaged').value;
     if (!damaged) fail('damaged');
+
+    const damageImagesCount = document.getElementById('damageImages').files.length;
+    if (damaged === 'Yes' && damageImagesCount === 0) fail('damageImages');
 
     const returnDateTime = document.getElementById('returnDateTime').value;
     if (!returnDateTime) fail('returnDateTime');
@@ -932,3 +1030,4 @@
   }
   </script>
 </body>
+</html>
