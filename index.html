@@ -878,7 +878,8 @@
   }
 
   // lays images out in a 3-column x 4-row grid (12 per page) with rounded corners.
-  // Returns the y position to continue from — always a fresh page after the grid, if any images were added.
+  // Returns the y position to continue from. Does not force a trailing page — the next
+  // image group (if any) starts its own fresh page on its first image.
   async function addImagesToPDF(files, pdf, title, pageWidth, yStart) {
     if (!files || files.length === 0) return yStart;
 
@@ -896,11 +897,13 @@
       const posInPage = i % perPage;
       if (posInPage === 0) {
         pdf.addPage();
-        pdf.setFontSize(14);
+        pdf.setFontSize(8);
         pdf.setFont(undefined, "bold");
-        pdf.text(title, margin, margin);
+        pdf.setTextColor(110, 110, 115);
+        pdf.text(title.toUpperCase(), margin, margin);
         pdf.setFont(undefined, "normal");
-        gridTop = margin + 24;
+        pdf.setTextColor(28, 28, 30);
+        gridTop = margin + 18;
       }
 
       const col = posInPage % cols;
@@ -913,8 +916,6 @@
       pdf.addImage(thumb, 'PNG', x, y, cellW, cellH);
     }
 
-    // start a fresh page for whatever content follows the grid
-    pdf.addPage();
     return margin;
   }
 
@@ -946,9 +947,9 @@
       const ROW_LABEL_SIZE = 8;
       const ROW_VALUE_SIZE = 10.5;
       const ROW_LINE_HEIGHT = 12;
-      const ROW_TOP_PAD = 12; // breathing room between the divider above and this row's label
+      const ROW_TOP_PAD = 18; // breathing room between the divider above and this row's label
       const CARD_RADIUS = 10;
-      const SIGNATURE_BLOCK_HEIGHT = 73; // label + gap + image
+      const SIGNATURE_BLOCK_HEIGHT = ROW_TOP_PAD + 61; // label + gap + image, scaled with ROW_TOP_PAD
 
       function checkPageBreak(space = 60) {
         if (y + space > pageHeight - 40) {
