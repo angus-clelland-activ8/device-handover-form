@@ -987,8 +987,10 @@
       const ROW_LINE_HEIGHT = 12;
       const ROW_TOP_PAD = 18;    // gap from a divider down to the next row's label
       const ROW_BOTTOM_PAD = 10; // gap from a row's last line down to the divider below it
-      const CARD_PAD = (ROW_TOP_PAD + ROW_BOTTOM_PAD) / 2; // ~half the inter-row gap, used only at the card's outer top/bottom edges
+      const CARD_PAD = (ROW_TOP_PAD + ROW_BOTTOM_PAD) / 2; // used for the card's bottom edge and horizontal padding
+      const CARD_TOP_PAD = CARD_PAD + 4; // a little extra breathing room at the very top of the box
       const CARD_RADIUS = 10;
+      const TITLE_GAP = 8; // space from the section title's baseline down to the card's top edge
 
       function checkPageBreak(space = 60) {
         if (y + space > pageHeight - 40) {
@@ -1012,30 +1014,36 @@
         });
       }
 
-      // Draws an iOS-style rounded card with a gray uppercase title above it.
-      // The first row's top space and the last row's bottom space use CARD_PAD alone
-      // (roughly half the ROW_TOP_PAD + ROW_BOTTOM_PAD gap seen between rows), so the
-      // card's outer edges don't look more padded than the dividers between rows.
-      // Auto-paginates if the card wouldn't fit on the remaining page space.
-      // Returns the y-coordinate of the card's bottom edge.
-      function drawCard(x, yTop, width, title, rows, opts) {
-        opts = opts || {};
+      // Computes the wrapped rows and total content height for a card without drawing
+      // anything, so callers can pre-measure a group of cards (e.g. to center them).
+      function computeCardLayout(width, rows, hasSig) {
         const contentWidth = width - CARD_PAD * 2;
         const measured = measureCardRows(rows, contentWidth);
         const lastIdx = measured.length - 1;
-        const hasSig = !!opts.signatureDataUrl;
-
         let contentHeight = 0;
         measured.forEach((r, idx) => {
-          const topPad = idx === 0 ? CARD_PAD : ROW_TOP_PAD;
+          const topPad = idx === 0 ? CARD_TOP_PAD : ROW_TOP_PAD;
           const bottomPad = (idx === lastIdx && !hasSig) ? CARD_PAD : ROW_BOTTOM_PAD;
           contentHeight += topPad + r.lines.length * ROW_LINE_HEIGHT + bottomPad;
         });
         if (hasSig) {
           contentHeight += ROW_TOP_PAD + 6 + 46 + CARD_PAD; // gap + label + gap + image + bottom pad
         }
+        return { measured, lastIdx, contentHeight };
+      }
 
-        if (yTop + 8 + contentHeight > pageHeight - 40) {
+      // Draws an iOS-style rounded card with a gray uppercase title above it.
+      // The first row's top space and the last row's bottom space use CARD_TOP_PAD /
+      // CARD_PAD alone (roughly half the ROW_TOP_PAD + ROW_BOTTOM_PAD gap seen between
+      // rows), so the card's outer edges don't look more padded than the dividers between rows.
+      // Auto-paginates if the card wouldn't fit on the remaining page space.
+      // Returns the y-coordinate of the card's bottom edge.
+      function drawCard(x, yTop, width, title, rows, opts) {
+        opts = opts || {};
+        const hasSig = !!opts.signatureDataUrl;
+        const { measured, lastIdx, contentHeight } = computeCardLayout(width, rows, hasSig);
+
+        if (yTop + TITLE_GAP + contentHeight > pageHeight - 40) {
           pdf.addPage();
           yTop = 40;
         }
@@ -1046,7 +1054,7 @@
         pdf.text(title.toUpperCase(), x, yTop);
         pdf.setFont(undefined, "normal");
 
-        const cardY = yTop + 8;
+        const cardY = yTop + TITLE_GAP;
         pdf.setFillColor(255, 255, 255);
         pdf.setDrawColor(...IOS_BORDER);
         pdf.setLineWidth(0.75);
@@ -1054,7 +1062,7 @@
 
         let cy = cardY;
         measured.forEach((r, idx) => {
-          const topPad = idx === 0 ? CARD_PAD : ROW_TOP_PAD;
+          const topPad = idx === 0 ? CARD_TOP_PAD : ROW_TOP_PAD;
           const bottomPad = (idx === lastIdx && !hasSig) ? CARD_PAD : ROW_BOTTOM_PAD;
 
           const labelY = cy + topPad;
@@ -1082,7 +1090,7 @@
           pdf.setFontSize(ROW_LABEL_SIZE);
           pdf.setTextColor(...IOS_LABEL_GRAY);
           pdf.text('SIGNATURE', x + CARD_PAD, sigLabelY);
-          const sigW = Math.min(160, contentWidth);
+          const sigW = Math.min(160, width - CARD_PAD * 2);
           pdf.addImage(opts.signatureDataUrl, 'PNG', x + CARD_PAD, sigLabelY + 6, sigW, 46);
         }
 
@@ -1101,50 +1109,68 @@
           const headerX = 40 + (pageWidth - 80 - headerW) / 2;
           const headerThumb = roundedThumbnailDataURL(headerImgObj, headerW, headerH, 14);
           pdf.addImage(headerThumb, 'PNG', headerX, y, headerW, headerH);
-          y += headerH + 20;
+          y += headerH;
         } catch (e) {
           console.warn("Header image could not be added to PDF:", e);
         }
       }
 
-      // Store Details + Store Team Member/Signature, side by side
+      // Store Details + Store Team Member/Signature, side by side; Devices Returned below.
+      // The whole block is centered in the space between the header image and the page bottom.
       const usableWidth = pageWidth - 80;
       const colGap = 16;
       const colWidth = (usableWidth - colGap) / 2;
       const leftX = 40;
       const rightX = 40 + colWidth + colGap;
-      const cardsY = y;
 
       const dateTimeVal = document.getElementById('returnDateTime').value;
       const formattedDateTime = dateTimeVal
         ? new Date(dateTimeVal).toLocaleString("en-NZ", { dateStyle: "short", timeStyle: "short" })
         : '';
 
-      const leftBottom = drawCard(leftX, cardsY, colWidth, "Store Details", [
+      const storeDetailsRows = [
         { label: "Store ID", value: document.getElementById('storeId').value },
         { label: "Retailer", value: document.getElementById('storeName').value },
         { label: "Location", value: document.getElementById('storeLocation').value },
         { label: "Team Member", value: document.getElementById('teamMember').value },
         { label: "Date & Time", value: formattedDateTime }
-      ]);
-
-      const rightBottom = drawCard(rightX, cardsY, colWidth, "Store Team Member", [
+      ];
+      const teamMemberRows = [
         { label: "Returned To", value: document.getElementById('storeMember').value },
         { label: "Position", value: document.getElementById('storePosition').value },
         { label: "Phone", value: document.getElementById('storePhone').value }
-      ], {
-        signatureDataUrl: signaturePad.isEmpty() ? null : signaturePad.toDataURL()
-      });
-
-      y = Math.max(leftBottom, rightBottom) + 20;
-
-      // Devices Returned, full width
+      ];
+      const teamMemberHasSig = !signaturePad.isEmpty();
+      const teamMemberSignatureUrl = teamMemberHasSig ? signaturePad.toDataURL() : null;
       const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
-      const devicesBottom = drawCard(40, y, usableWidth, "Devices Returned", [
+      const devicesRows = [
         { label: "Devices", value: devicesChecked },
         { label: "Other Devices", value: document.getElementById('otherDevices').value.split(',').map(s => s.trim()).filter(Boolean) },
         { label: "Damaged", value: document.getElementById('damaged').value }
-      ]);
+      ];
+
+      // pre-measure so the block can be centered before anything is drawn
+      const leftLayout = computeCardLayout(colWidth, storeDetailsRows, false);
+      const rightLayout = computeCardLayout(colWidth, teamMemberRows, teamMemberHasSig);
+      const devicesLayout = computeCardLayout(usableWidth, devicesRows, false);
+      const topRowHeight = TITLE_GAP + Math.max(leftLayout.contentHeight, rightLayout.contentHeight);
+      const sectionGap = 20;
+      const devicesSectionHeight = TITLE_GAP + devicesLayout.contentHeight;
+      const totalBlockHeight = topRowHeight + sectionGap + devicesSectionHeight;
+
+      const availableSpace = (pageHeight - 40) - y;
+      const centeringOffset = Math.max(12, (availableSpace - totalBlockHeight) / 2);
+      const cardsY = y + centeringOffset;
+
+      const leftBottom = drawCard(leftX, cardsY, colWidth, "Store Details", storeDetailsRows);
+      const rightBottom = drawCard(rightX, cardsY, colWidth, "Store Team Member", teamMemberRows, {
+        signatureDataUrl: teamMemberSignatureUrl
+      });
+
+      y = Math.max(leftBottom, rightBottom) + sectionGap;
+
+      // Devices Returned, full width
+      const devicesBottom = drawCard(40, y, usableWidth, "Devices Returned", devicesRows);
       y = devicesBottom + 20;
 
       y = await addImagesToPDF(document.getElementById('accessoryImage').files, pdf, "Device Images", pageWidth, y);
