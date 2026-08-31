@@ -1087,7 +1087,7 @@
       const devicesChecked = Array.from(document.querySelectorAll('#devicesReturned input[type=checkbox]:checked')).map(cb => cb.value);
       const devicesBottom = drawCard(40, y, usableWidth, "Devices Returned", [
         { label: "Devices", value: devicesChecked },
-        { label: "Other Devices", value: document.getElementById('otherDevices').value },
+        { label: "Other Devices", value: document.getElementById('otherDevices').value.split(',').map(s => s.trim()).filter(Boolean) },
         { label: "Damaged", value: document.getElementById('damaged').value }
       ]);
       y = devicesBottom + 20;
