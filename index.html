@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    const password = "Activ8";
+    let userPass = prompt("Enter password to access the Device Return Form:");
+    if (userPass !== password) {
+      alert("Incorrect password. Access denied.");
+      window.location = "https://www.apple.com/nz";
+    }
+  </script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Activ8 Device Return Form</title>
@@ -275,34 +284,6 @@
       line-height: 1.4;
     }
 
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: var(--ios-bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.25s ease;
-    }
-    .loading-spinner {
-      width: 34px;
-      height: 34px;
-      border: 3px solid #D1D1D6;
-      border-top-color: var(--ios-blue);
-      border-radius: 50%;
-      animation: loading-spin 0.8s linear infinite;
-    }
-    @keyframes loading-spin {
-      to { transform: rotate(360deg); }
-    }
-    .loading-text {
-      margin-top: 14px;
-      font-size: 14px;
-      color: var(--ios-label-gray);
-    }
-
     @media (max-width: 480px) {
       .device-item { font-size: 14px; }
     }
@@ -315,34 +296,6 @@
 
 </head>
 <body>
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Loading Device Return Form…</div>
-  </div>
-
-  <script>
-    // Tracks whether the password has actually been verified — the overlay below
-    // must never hide itself (via the 'load' event or its timeout fallback) unless
-    // this is true, or the form would be revealed underneath before any redirect completes.
-    let passwordVerified = false;
-
-    // Defer the password prompt until after the loading screen has painted,
-    // so there's a visible spinner instead of a blank white page while it appears.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const password = "Activ8";
-        const userPass = prompt("Enter password to access the Device Return Form:");
-        if (userPass !== password) {
-          alert("Incorrect password. Access denied.");
-          window.location = "https://www.apple.com/nz";
-        } else {
-          passwordVerified = true;
-          if (typeof hideLoadingOverlay === 'function') hideLoadingOverlay();
-        }
-      });
-    });
-  </script>
-
   <h1>Device Return Form</h1>
 
   <div class="page-wrap">
@@ -1197,15 +1150,6 @@
       exportBtn.textContent = originalLabel;
     }
   }
-  // ---------- hide the loading overlay once the app is ready ----------
-  function hideLoadingOverlay() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (!overlay) return;
-    overlay.style.opacity = '0';
-    setTimeout(() => overlay.remove(), 250);
-  }
-  window.addEventListener('load', hideLoadingOverlay);
-  setTimeout(hideLoadingOverlay, 4000); // fallback in case something hangs
   </script>
 </body>
 </html>
